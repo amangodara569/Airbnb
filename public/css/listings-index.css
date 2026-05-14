@@ -1,39 +1,7 @@
 .listings-container {
-    padding: 3rem 1rem;
-    perspective: 1200px;
-    position: relative;
-    overflow: hidden;
-}
-
-/* 3D Background Animation */
-.listings-container::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: 
-        radial-gradient(circle at 20% 50%, rgba(100, 200, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(150, 100, 255, 0.1) 0%, transparent 50%);
-    animation: backgroundShift 20s ease-in-out infinite;
-    pointer-events: none;
-    z-index: -1;
-}
-
-@keyframes backgroundShift {
-    0%, 100% {
-        transform: translate(0, 0) scale(1);
-    }
-    25% {
-        transform: translate(-30px, -30px) scale(1.05);
-    }
-    50% {
-        transform: translate(30px, 30px) scale(1.1);
-    }
-    75% {
-        transform: translate(-20px, 40px) scale(1.05);
-    }
+    padding: 3rem 2rem;
+    max-width: 1800px;
+    margin: 0 auto;
 }
 
 .listings-title {
@@ -43,133 +11,47 @@
     text-align: center;
     margin-bottom: 3rem;
     letter-spacing: 0.5px;
-    position: relative;
-    z-index: 1;
-    animation: titleFloat 3s ease-in-out infinite;
-}
-
-@keyframes titleFloat {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-10px);
-    }
 }
 
 .listings-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1.5rem;
     padding: 0;
-    perspective: 1000px;
 }
 
 .listing-card {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    border-radius: 16px;
     overflow: hidden;
     backdrop-filter: blur(10px);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     position: relative;
-    transform-style: preserve-3d;
-    animation: cardFloat 3s ease-in-out infinite;
-}
-
-@keyframes cardFloat {
-    0%, 100% {
-        transform: translateY(0px) rotateZ(0deg);
-    }
-    50% {
-        transform: translateY(-8px) rotateZ(0.5deg);
-    }
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 400px;
 }
 
 .listing-card:hover {
-    transform: scale(1.08) translateY(-10px) rotateX(5deg) rotateY(-5deg) rotateZ(0deg);
-    box-shadow: 0 25px 60px rgba(31, 38, 135, 0.6);
+    transform: translateY(-8px);
+    box-shadow: 0 16px 48px 0 rgba(31, 38, 135, 0.5);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.listing-card:hover .card-overlay {
+    opacity: 1;
 }
 
 .card-image {
     width: 100%;
-    height: 220px;
+    height: 200px;
     object-fit: cover;
     display: block;
-}
-
-.card-content {
-    padding: 1.5rem;
-}
-
-.card-title {
-    color: #FFFFFF;
-    font-size: 1.3rem;
-    font-weight: 700;
-    margin-bottom: 0.75rem;
-    line-height: 1.3;
-}
-
-.card-description {
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-}
-
-.card-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    color: rgba(255, 255, 255, 0.75);
-    font-size: 0.9rem;
-}
-
-.info-label {
-    font-weight: 600;
-}
-
-.info-value {
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.card-price {
-    color: #FFFFFF;
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.card-button {
-    display: inline-block;
-    background: rgba(255, 255, 255, 0.15);
-    color: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    padding: 0.75rem 1.5rem;
-    margin-top: 1rem;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    backdrop-filter: blur(10px);
-}
-
-.card-button:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
 }
 
 .card-overlay {
@@ -177,9 +59,9 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: 200px;
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.3));
-    border-radius: 20px;
+    border-radius: 16px 16px 0 0;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -187,10 +69,8 @@
     opacity: 0;
     transition: opacity 0.3s ease;
     backdrop-filter: blur(5px);
-}
-
-.listing-card:hover .card-overlay {
-    opacity: 1;
+    z-index: 10;
+    pointer-events: none;
 }
 
 .overlay-location {
@@ -199,7 +79,7 @@
     gap: 0.5rem;
     color: #FFFFFF;
     font-size: 1rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     font-weight: 600;
 }
 
@@ -211,13 +91,149 @@
 
 .overlay-price {
     background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 12px;
-    padding: 0.75rem 1rem;
     color: #FFFFFF;
-    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    display: inline-block;
+    font-size: 0.95rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card-content {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.card-title {
+    color: #FFFFFF;
     font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.card-description {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    margin-top: auto;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.8rem;
+    padding: 0.25rem 0;
+}
+
+.info-label {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.info-value {
+    color: rgba(255, 255, 255, 0.95);
+    text-align: right;
+}
+
+.card-button {
+    display: block;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 0.65rem 1rem;
     text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    margin-top: auto;
+}
+
+.card-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 1600px) {
+    .listings-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (max-width: 1200px) {
+    .listings-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .listings-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+    }
+
+    .listings-container {
+        padding: 2rem 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .listings-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .listings-container {
+        padding: 1.5rem 1rem;
+    }
+
+    .listings-title {
+        font-size: 1.8rem;
+        margin-bottom: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .listings-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .card-title {
+        font-size: 1rem;
+    }
+
+    .card-description {
+        font-size: 0.8rem;
+    }
 }
 
 @media (max-width: 768px) {
