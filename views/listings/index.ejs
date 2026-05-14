@@ -3,10 +3,70 @@
 <style>
     .card-hover {
         transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        overflow: hidden;
     }
     .card-hover:hover {
         transform: scale(1.08) translateY(-10px);
         box-shadow: 0 15px 40px rgba(124, 58, 237, 0.3) !important;
+    }
+    .card-image-wrapper {
+        position: relative;
+        height: 250px;
+        overflow: hidden;
+        border-radius: 20px 20px 0 0;
+    }
+    .card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.9;
+        transition: opacity 0.3s ease;
+    }
+    .card-image-wrapper:hover .card-image {
+        opacity: 0.6;
+    }
+    .card-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.8) 0%, rgba(15, 20, 25, 0.9) 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 1.5rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        border-radius: 20px 20px 0 0;
+        pointer-events: none;
+    }
+    .card-image-wrapper:hover .card-overlay {
+        opacity: 1;
+    }
+    .overlay-location {
+        color: #e4e6eb;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .overlay-country {
+        color: #a0aec0;
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+    }
+    .overlay-price {
+        background-color: #7c3aed;
+        color: #0f1419;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        display: inline-block;
+        font-size: 0.95rem;
     }
     .btn-hover {
         transition: all 0.3s ease;
@@ -24,7 +84,17 @@
                 <% for(let listing of listings){ %>
                     <div class="col-md-4 mb-4">
                         <div class="card h-100 shadow-lg card-hover" style="background-color: #1a1e27; border: 1px solid #7c3aed; border-radius: 20px; color: #e4e6eb;">
-                            <img class="card-img-top" src="<%= listing.image.url %>" alt="<%= listing.title %>" style="height: 250px; object-fit: cover; border-radius: 20px 20px 0 0; opacity: 0.9;">
+                            <div class="card-image-wrapper">
+                                <img class="card-image" src="<%= listing.image.url %>" alt="<%= listing.title %>">
+                                <div class="card-overlay">
+                                    <div class="overlay-location">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <%= listing.location %>
+                                    </div>
+                                    <div class="overlay-country"><%= listing.country %></div>
+                                    <div class="overlay-price">$<%= listing.price %>/night</div>
+                                </div>
+                            </div>
                             <div class="card-body">
                                 <h5 class="card-title" style="color: #7c3aed; font-weight: 600;"><%= listing.title %></h5>
                                 <p class="card-text" style="color: #a0aec0;"><%= listing.description %></p>
