@@ -1,0 +1,52 @@
+.navbar{
+    height: 5rem;
+    background-color: #000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2rem;
+}
+.fa-brands{
+    color: green;
+    font-size: 2rem;
+}
+
+.nav-link{
+    color:#000;
+    /* to override our custom styling */
+    font-size: 1.2rem !important;  
+    margin-left: 1rem;
+}
+
+/* footer */
+.f-info-links a{
+    text-decoration: none;
+    color: black;
+}
+
+.f-info-links a:hover{
+    color: red;
+    text-decoration: underline;
+}
+.f-info-links{
+    width: 100%;
+
+}
+.f-info-socials{
+    width: 100%;
+}
+.f-info-brand{
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    flex-basis: 100%;
+}
+.f-info{
+    display: flex;
+    justify-content: space-between;
+    align-items: space-evenly;
+    padding: 1rem 2rem;
+    background-color: grey;
+    flex-wrap: wrap;
+    text-align: center;
+}

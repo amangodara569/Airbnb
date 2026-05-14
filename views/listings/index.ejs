@@ -1,0 +1,45 @@
+<%- layout('layouts/boilerplate') %>
+<!-- to show all listings -->
+<style>
+    .card-hover {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card-hover:hover {
+        transform: scale(1.08) translateY(-10px);
+        box-shadow: 0 15px 40px rgba(124, 58, 237, 0.3) !important;
+    }
+    .btn-hover {
+        transition: all 0.3s ease;
+    }
+    .btn-hover:hover {
+        background-color: #6d28d9;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+    }
+</style>
+<div class="container-fluid" style="background: linear-gradient(135deg, #0f1419 0%, #1a1e27 100%); min-height: 100vh; padding: 2rem 1rem;">
+        <h1 class="mb-4" style="color: #e4e6eb; font-weight: bold; font-size: 2.5rem;">All Listings</h1>
+        <% if(listings.length > 0) { %>
+            <div class="row">
+                <% for(let listing of listings){ %>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-lg card-hover" style="background-color: #1a1e27; border: 1px solid #7c3aed; border-radius: 20px; color: #e4e6eb;">
+                            <img class="card-img-top" src="<%= listing.image.url %>" alt="<%= listing.title %>" style="height: 250px; object-fit: cover; border-radius: 20px 20px 0 0; opacity: 0.9;">
+                            <div class="card-body">
+                                <h5 class="card-title" style="color: #7c3aed; font-weight: 600;"><%= listing.title %></h5>
+                                <p class="card-text" style="color: #a0aec0;"><%= listing.description %></p>
+                                <p class="card-text" style="color: #e4e6eb;"><strong>Price:</strong> <span style="color: #7c3aed; font-weight: 600;">$<%= listing.price %></span></p>
+                                <p class="card-text" style="color: #e4e6eb;"><strong>Location:</strong> <%= listing.location %>, <%= listing.country %></p>
+                            </div>
+                            <div class="card-footer" style="background-color: #0f1419; border: none; border-radius: 0 0 20px 20px; border-top: 1px solid #7c3aed;">
+                                <a href="/listings/<%= listing._id %>" class="btn btn-primary w-100 btn-hover" style="background-color: #7c3aed; border: none; color: #0f1419; font-weight: 600;">View Listing</a>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        <% } else { %>
+            <p style="color: #a0aec0; font-size: 1.1rem;">No listings available.</p>
+        <% } %>
+        <a href="/listings/new" class="btn btn-success mt-4 btn-hover" style="background-color: #7c3aed; border: none; color: #0f1419; font-weight: 600; padding: 0.75rem 2rem; font-size: 1rem;">Create New Listing</a>
+</div>
