@@ -1,0 +1,64 @@
+/* Wave Animation Background */
+body {
+    position: relative;
+    overflow-x: hidden;
+}
+
+.wave-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(to top, rgba(10, 10, 10, 0.8), transparent);
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.wave {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 200%;
+    height: 100%;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path d="M0,40 Q300,0 600,40 T1200,40 L1200,120 L0,120 Z" fill="%23ffffff" opacity="0.08"/></svg>') repeat-x;
+    background-size: 600px 120px;
+    animation: wave 15s linear infinite;
+}
+
+.wave:nth-child(2) {
+    bottom: 10px;
+    opacity: 0.6;
+    animation: wave 10s linear infinite reverse;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path d="M0,50 Q300,10 600,50 T1200,50 L1200,120 L0,120 Z" fill="%23ffffff" opacity="0.05"/></svg>') repeat-x;
+    background-size: 600px 120px;
+}
+
+.wave:nth-child(3) {
+    bottom: 15px;
+    opacity: 0.4;
+    animation: wave 20s linear infinite;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path d="M0,60 Q300,20 600,60 T1200,60 L1200,120 L0,120 Z" fill="%23ffffff" opacity="0.03"/></svg>') repeat-x;
+    background-size: 600px 120px;
+}
+
+@keyframes wave {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(600px);
+    }
+}
+
+/* Content wrapper to ensure it appears above waves */
+.container-fluid {
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure main content is above waves */
+html {
+    position: relative;
+}
