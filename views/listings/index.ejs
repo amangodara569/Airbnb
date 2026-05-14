@@ -1,119 +1,40 @@
 <%- layout('layouts/boilerplate') %>
-<!-- to show all listings -->
-<style>
-    .card-hover {
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-    }
-    .card-hover:hover {
-        transform: scale(1.05) translateY(-8px);
-        box-shadow: 0 20px 50px rgba(255, 255, 255, 0.15) !important;
-    }
-    .card-image-wrapper {
-        position: relative;
-        height: 250px;
-        overflow: hidden;
-        border-radius: 24px 24px 0 0;
-    }
-    .card-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        opacity: 0.95;
-        transition: opacity 0.4s ease;
-    }
-    .card-image-wrapper:hover .card-image {
-        opacity: 0.5;
-    }
-    .card-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.7) 100%);
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        padding: 1.5rem;
-        opacity: 0;
-        transition: opacity 0.4s ease;
-        border-radius: 24px 24px 0 0;
-        pointer-events: none;
-        backdrop-filter: blur(5px);
-    }
-    .card-image-wrapper:hover .card-overlay {
-        opacity: 1;
-    }
-    .overlay-location {
-        color: #FFFFFF;
-        font-size: 1.15rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        letter-spacing: 0.3px;
-    }
-    .overlay-country {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 0.95rem;
-        margin-bottom: 1rem;
-    }
-    .overlay-price {
-        background: rgba(255, 255, 255, 0.15);
-        color: #FFFFFF;
-        padding: 0.6rem 1rem;
-        border-radius: 12px;
-        font-weight: 600;
-        display: inline-block;
-        font-size: 0.95rem;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .btn-hover {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .btn-hover:hover {
-        background-color: rgba(255, 255, 255, 0.2);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
-    }
-</style>
-<div class="container-fluid" style="background: transparent; min-height: 100vh; padding: 2rem 1rem;">
-        <h1 class="mb-4" style="color: #FFFFFF; font-weight: bold; font-size: 2.5rem; letter-spacing: 0.5px;">All Listings</h1>
-        <% if(listings.length > 0) { %>
-            <div class="row">
-                <% for(let listing of listings){ %>
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100 shadow-lg card-hover" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 24px; color: #FFFFFF; backdrop-filter: blur(10px); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);">
-                            <div class="card-image-wrapper">
-                                <img class="card-image" src="<%= listing.image.url %>" alt="<%= listing.title %>">
-                                <div class="card-overlay">
-                                    <div class="overlay-location">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <%= listing.location %>
-                                    </div>
-                                    <div class="overlay-country"><%= listing.country %></div>
-                                    <div class="overlay-price">$<%= listing.price %>/night</div>
-                                </div>
+<link rel="stylesheet" href="/css/listings-index.css">
+
+<div class="listings-container">
+    <h1 class="listings-title">All Listings</h1>
+    <% if(listings.length > 0) { %>
+        <div class="listings-grid">
+            <% for(let listing of listings){ %>
+                <div class="listing-card">
+                    <img class="card-image" src="<%= listing.image.url %>" alt="<%= listing.title %>">
+                    <div class="card-overlay">
+                        <div class="overlay-location">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <%= listing.location %>
+                        </div>
+                        <div class="overlay-country"><%= listing.country %></div>
+                        <div class="overlay-price">₹<%= listing.price %>/night</div>
+                    </div>
+                    <div class="card-content">
+                        <h5 class="card-title"><%= listing.title %></h5>
+                        <p class="card-description"><%= listing.description %></p>
+                        <div class="card-info">
+                            <div class="info-row">
+                                <span class="info-label">Price:</span>
+                                <span class="info-value">₹<%= listing.price %></span>
                             </div>
-                            <div class="card-body">
-                                <h5 class="card-title" style="color: #FFFFFF; font-weight: 600; letter-spacing: 0.3px;"><%= listing.title %></h5>
-                                <p class="card-text" style="color: rgba(255, 255, 255, 0.75);"><%= listing.description %></p>
-                                <p class="card-text" style="color: #FFFFFF;"><strong>Price:</strong> <span style="color: #FFFFFF; font-weight: 600; background: rgba(255, 255, 255, 0.15); padding: 2px 8px; border-radius: 6px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">$<%= listing.price %></span></p>
-                                <p class="card-text" style="color: #FFFFFF;"><strong>Location:</strong> <%= listing.location %>, <%= listing.country %></p>
-                            </div>
-                            <div class="card-footer" style="background: transparent; border: none; border-radius: 0 0 24px 24px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                                <a href="/listings/<%= listing._id %>" class="btn btn-primary w-100 btn-hover" style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2); color: #FFFFFF; font-weight: 600; backdrop-filter: blur(10px);">View Listing</a>
+                            <div class="info-row">
+                                <span class="info-label">Location:</span>
+                                <span class="info-value"><%= listing.location %>, <%= listing.country %></span>
                             </div>
                         </div>
+                        <a href="/listings/<%= listing._id %>" class="card-button">View Listing</a>
                     </div>
-                <% } %>
-            </div>
-        <% } else { %>
-            <p style="color: rgba(255, 255, 255, 0.7); font-size: 1.1rem;">No listings available.</p>
-        <% } %>
-        <a href="/listings/new" class="btn btn-success mt-4 btn-hover" style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2); color: #FFFFFF; font-weight: 600; padding: 0.75rem 2rem; font-size: 1rem; backdrop-filter: blur(10px);">Create New Listing</a>
+                </div>
+            <% } %>
+        </div>
+    <% } else { %>
+        <p style="color: rgba(255, 255, 255, 0.7); font-size: 1.1rem; text-align: center; margin-top: 3rem;">No listings available.</p>
+    <% } %>
 </div>
