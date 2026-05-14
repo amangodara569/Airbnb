@@ -1,6 +1,10 @@
 <%- layout('layouts/boilerplate') %>
 <link rel="stylesheet" href="/css/listings-show.css">
 
+<div class="listing-image-hero" style="background-image: url('<%= listing.image.url %>'); background-size: cover; background-position: center;">
+    <div class="listing-image-overlay"></div>
+</div>
+
 <div class="listing-container">
     <div class="listing-hero">
         <h1 class="listing-title"><%= listing.title %></h1>
