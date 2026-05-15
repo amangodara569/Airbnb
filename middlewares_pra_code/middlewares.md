@@ -90,4 +90,4 @@ NOW WE DONT NEED TO WRITE TRY CATCH
         console.log("alsdjf");
         console.dir(err); // to print more details
         return err;
-     }
+     };
