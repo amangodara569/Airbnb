@@ -13,3 +13,12 @@ app.use((req, res, next) => { //if path not specified, it will run for all route
     next(); //if middleware works is not properly defined then you wont be able  to get response from server, because next() is not called and request will be stuck in middleware(loading on website)
 });
 
+
+//creating a utility middleware
+//logger = prints useful info on console about incoming request (its like log data, everything is stored here that we do)
+
+app.use((req, res, next)=>{
+    //do console.log(req); to know more about loggers
+    console.log(req.method);
+    
+})
