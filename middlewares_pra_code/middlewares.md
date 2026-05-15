@@ -56,3 +56,38 @@ request ===> middleware =====> response
     as in async case express does not call next , so we wont be able to handle error properly and our server will permaneltly crash
 
 # different types of errors can occur , perpare for all of them
+    validation error - when field is required but we dont follow that - use try-catch block
+    -try-catch works on a bigger level , just put complete block of code in it and it will handle it
+    - can also use try catch in async   , just dont forget to wriet next(err) in catch block
+
+
+# using wrapAsync for error handling
+function asyncWrap(fn){
+    return function(req, res, next){
+        fn(req, res, next).catch((err)=> next(err));
+    };
+}
+
+NOW WE DONT NEED TO WRITE TRY CATCH
+     JUST - app.get("route", asyncWrap(async(req, res, next)=>{
+        out code
+     }))
+
+
+# mongoose error
+     every error has a name
+     app.use((err, req, res, next)=>{
+        console.log(err.name);
+        if(err.name === "something"){
+            handleValidationerr(err); //call that function here
+        }
+        next(err);
+     });
+     //when we haeve to do a paritcular things if a particular error occurs
+
+     create a function
+     const handleValidationErr = (err)=>{
+        console.log("alsdjf");
+        console.dir(err); // to print more details
+        return err;
+     }
