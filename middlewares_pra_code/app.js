@@ -19,6 +19,12 @@ app.use((req, res, next) => { //if path not specified, it will run for all route
 
 app.use((req, res, next)=>{
     //do console.log(req); to know more about loggers
-    console.log(req.method);
-    
-})
+    req.time = new Date().toLocaleTimeString(); //we are adding a new property to req object, so that we can use it in our routes
+    console.log(req.method, req.hostname, req.path, req.time);
+
+});
+
+//to render page not found when , user try to access anonymous route that doesnt exiist
+app.use((req, res)=>{
+    res.status(404).send('Page Not Found');
+});

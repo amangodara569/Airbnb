@@ -22,3 +22,18 @@ request ===> middleware =====> response
         either give reponse which is specified
         or call next middleware
 
+# go to express/request page to get to know more about it
+
+# dont write middlewares at last , they dont work, if it has to work for all path , then at first or for a particular then just before that path
+
+# error handling middleware
+    app.use((err, req, res, next)=>{
+        console.log("error);
+        next() ; 
+        //if we call next in them , if will directly call non error handling middleware
+        //can also pass error
+        next(err);//triggers express default error handler
+    })
+
+    next() = means we are calling normal middleware
+    next(err) = calling error handling middleware
