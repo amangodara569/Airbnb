@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const ExpressError = require('./expressError'); //importing custom error class
 
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
@@ -26,5 +27,13 @@ app.use((req, res, next)=>{
 
 //to render page not found when , user try to access anonymous route that doesnt exiist
 app.use((req, res)=>{
-    res.status(404).send('Page Not Found');
+    //res.status(404).send('Page Not Found');\
+    //throw error from error class
+    throw new ExpressError('Page Not Found', 404); //parameteres already defined in error file
+});
+//find difference between above code and below code
+app.use((err, req, res, next)=>{
+    const {statusCode = 500, message = 'Something went wrong'} = err; //if status code is not defined in error file then it will be 500 and if message is not defined then it will be 'Something went wrong'
+    //setting default status code value is important because if we dont set it then it will be undefined and we wont be able to send response to client
+    res.status(statusCode).send(message);
 });

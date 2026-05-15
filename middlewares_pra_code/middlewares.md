@@ -37,3 +37,22 @@ request ===> middleware =====> response
 
     next() = means we are calling normal middleware
     next(err) = calling error handling middleware
+
+
+# handling async errors
+    - same step , create expressError.js file 
+
+    app.get("route/, async (req, res, next)=>{
+        let {id} = req.params;
+        let chat =  await Chat.findbyid(id);
+        if(! chat){
+            return next(new ExpressError (404, "chat not found"));
+
+        }
+        res.render("page.js", {chat});
+    });
+
+    // the main thing is that we have to explicitely call next 
+    as in async case express does not call next , so we wont be able to handle error properly and our server will permaneltly crash
+
+# different types of errors can occur , perpare for all of them
