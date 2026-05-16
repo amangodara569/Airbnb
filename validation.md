@@ -1,0 +1,1 @@
+when we enter data in form the browser and the web server will check to see that the data is in the correct format and within the constraints set by the application

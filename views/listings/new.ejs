@@ -3,12 +3,18 @@
 
 <div class="form-container">
     <h1 class="form-title">Create New Listing</h1>
-    <form method="POST" action="/listings">
+    <form method="POST" action="/listings" novalidate class="needs-validation">
         <div class="form-group">
             <label for="title" class="form-label">Title</label>
             <input type="text" id="title" name="title" class="form-input" placeholder="Enter listing title" required>
+        <!-- validation feedback -->
+            <div class="valid-feedback">looks good!</div>
+            <div class="invalid-feedback">Please fill out this field.</div>
         </div>
-
+<!-- for validation feedback, jis bhi form ke part ke neeche dikhana h wahan ye div add krde -->
+        
+        
+         
         <div class="form-group">
             <label for="description" class="form-label">Description</label>
             <textarea id="description" name="description" class="form-textarea" placeholder="Describe your listing" required></textarea>
@@ -17,8 +23,12 @@
         <div class="form-group">
             <label for="price" class="form-label">Price (per night)</label>
             <input type="number" id="price" name="price" class="form-input" placeholder="Enter price" step="0.01" required>
+            <!-- validation feedback (success and failure)-->
+                <div class="valid-feedback">looks good!</div>
+            <div class="invalid-feedback">Please fill out this field.</div>
         </div>
-
+<!-- set things to required so that users cannot submit the form without filling them out -->
+ <!-- it is called client and server side validation -->
         <div class="form-group">
             <label for="city" class="form-label">Location</label>
             <input type="text" id="city" name="city" class="form-input" placeholder="Enter city/location" required>
@@ -27,8 +37,12 @@
         <div class="form-group">
             <label for="country" class="form-label">Country</label>
             <input type="text" id="country" name="country" class="form-input" placeholder="Enter country" required>
+            <!-- validation feedback (success and failure)-->
+            <div class="valid-feedback">please enter a valid country name</div>
+            <div class="invalid-feedback">Please fill out this field.</div>
         </div>
 
         <button type="submit" class="form-button">Create Listing</button>
     </form>
 </div>
+<!-- for validation logic we can paste js code here or -->
