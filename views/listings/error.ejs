@@ -1,0 +1,10 @@
+<!-- use bootstrap alerts -->
+<% layout('./layouts/boilerplate') %>
+<div class="alert alert-danger" role="alert">
+    <h4 class="alert-heading"><%= message %></h4>
+    <p><%= statusCode %></p>
+</div>
+
+<!-- and also a back button -->
+<button class="btn btn-primary" onclick="window.history.back()">Back</button>
+<!-- now rendeer this page in middleware -->

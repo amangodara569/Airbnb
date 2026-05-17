@@ -7,6 +7,17 @@ const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const wrapAsync = require('./utils/wrapAsync');// for error handling
 const expressError = require('./utils/expressError');
+const { listingSchema } = require('./schema.js');
+//db schema validation, created it into a middleware this can be used as parameter in async routes
+const validateListing = (req, res, next) => {
+    let {error} = listingSchema.validate(req.body);
+    if (error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new expressError(400, errMsg);
+    } else {
+        next();
+    }
+}
 //basically we use it for creating boiler plate code for our templates, like header and footer, so we don't have to repeat the same code in every template.
 //that can be used again and again
 app.engine('ejs',ejsMate);
@@ -59,9 +70,12 @@ app.get('/listings', wrapAsync(async (req, res)=>{
 app.get('/listings/new', (req, res)=>{
     res.render('listings/new.ejs');
 });
-//create route
-app.post('/listings', wrapAsync(async (req, res, next)=>{
 
+
+
+//create route
+
+app.post('/listings', validateListing, wrapAsync(async (req, res, next)=>{
         let {title, description, price, city, country} = req.body;
             const newListing = new Listing({
             title: title,
@@ -72,7 +86,6 @@ app.post('/listings', wrapAsync(async (req, res, next)=>{
         });
         await newListing.save();
         res.redirect('/listings');    
- 
 }));
 //update route
 app.get('/listings/:id/edit', wrapAsync(async (req, res)=>{
@@ -80,11 +93,12 @@ app.get('/listings/:id/edit', wrapAsync(async (req, res)=>{
     const listing = await Listing.findById(id);
     res.render('listings/edit.ejs', {listing});
 }));
-app.put('/listings/:id', wrapAsync(async (req, res)=>{
+
+
+
+
+app.put('/listings/:id', validateListing, wrapAsync(async (req, res)=>{
     const {id} = req.params;
-    if(!req.body.listing){ //multiple errors can occur, like what if they dont send any data 
-        throw new expressError(400, "invliad data");
-    }
     let {title, description, price, city, country} = req.body;
     await Listing.findByIdAndUpdate(id, {
         title: title,
@@ -95,21 +109,36 @@ app.put('/listings/:id', wrapAsync(async (req, res)=>{
     });
     res.redirect(`/listings/${id}`);
 }));
+
+
+
+
 //delete route
 app.delete('/listings/:id', wrapAsync(async (req, res)=>{
     const {id} = req.params;
     await Listing.findByIdAndDelete(id);
     res.redirect('/listings');
 }));
+
+
+
+
+
 //if users try to access a non existing route
-app.all("*", (req, res, next)=>{  //if path doesnt mathches with any of the above routes
+app.all(/(.*)/, (req, res, next)=>{  //if path doesnt mathches with any of the above routes
     next(new expressError(404, "page not found"));
-})
+});
+
+
+
 //middleware for error handling, using wrap async this will automatically be called
 app.use((err, req, res, next)=>{
     let {statusCode= 500, message ="something went wrong"} = err;
-    res.status(statusCode).send(message);
+    res.render("listings/error.ejs", {message, statusCode});
+    //res.status(statusCode).send(message);
 });
+
+
 
 //show route, (click on listing title to view more about it)
 app.get('/listings/:id' , wrapAsync(async (req, res)=>{
