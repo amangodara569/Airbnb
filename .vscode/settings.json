@@ -1,0 +1,10 @@
+{
+  "editor.fontFamily": "Maple Mono NF",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 14,
+  "editor.lineHeight": 1.7,
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.smoothScrolling": true,
+  "terminal.integrated.fontFamily": "Maple Mono NF",
+  "terminal.integrated.fontSize": 13
+}
