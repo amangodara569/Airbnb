@@ -121,7 +121,12 @@ app.delete('/listings/:id', wrapAsync(async (req, res)=>{
 }));
 
 
-
+//show route, (click on listing title to view more about it)
+app.get('/listings/:id' , wrapAsync(async (req, res)=>{
+    const {id} = req.params;
+    const listing = await Listing.findById(id);
+    res.render('listings/show.ejs', {listing});
+}));//should be at the end of the routes, otherwise it will be treated as a dynamic route and will override the new route.
 
 
 //if users try to access a non existing route
@@ -138,13 +143,5 @@ app.use((err, req, res, next)=>{
     //res.status(statusCode).send(message);
 });
 
-
-
-//show route, (click on listing title to view more about it)
-app.get('/listings/:id' , wrapAsync(async (req, res)=>{
-    const {id} = req.params;
-    const listing = await Listing.findById(id);
-    res.render('listings/show.ejs', {listing});
-}));;//should be at the end of the file, otherwise it will be treated as a dynamic route and will override the new route.
 
 //when you go for customizing templates, install ejs-mate 
