@@ -174,6 +174,9 @@ app.use((req, res) => {
 
 ## VALIDATION MIDDLEWARE
 
+### What is validation middleware?
+A middleware function that checks if the incoming data (from a form) is valid BEFORE the route handler runs. If data is invalid, it throws an error immediately and the database is never touched.
+
 ### Your `validateListing` middleware (in app.js):
 ```js
 const { listingSchema } = require('./schema.js');
@@ -181,13 +184,18 @@ const { listingSchema } = require('./schema.js');
 const validateListing = (req, res, next) => {
     // Step 1: Run Joi validation on the request body
     let { error } = listingSchema.validate(req.body);
+    // listingSchema.validate(req.body) returns an object: { error, value }
+    // - error: contains details about what's wrong (undefined if all good)
+    // - value: the validated (and possibly type-converted) data
     
     // Step 2: If validation fails, create error message and throw
     if (error) {
         let errMsg = error.details.map((el) => el.message).join(",");
-        // error.details = array of all validation errors
-        // .map() extracts just the message from each
-        // .join(",") combines them into one string
+        // error.details = array of all validation errors (can be multiple!)
+        // Example: [ { message: '"title" is required', type: 'any.required', ... } ]
+        // .map((el) => el.message) = [ '"title" is required' ]
+        // .join(",") = '"title" is required' (if only 1 error)
+        //           = '"title" is required,"price" must be a number' (if 2 errors)
         throw new expressError(400, errMsg);
     } else {
         // Step 3: If validation passes, move to the next handler
@@ -196,12 +204,96 @@ const validateListing = (req, res, next) => {
 }
 ```
 
+### Deep Dive: What Joi validates
+```js
+// Your schema (schema.js):
+module.exports.listingSchema = Joi.object({
+    title: Joi.string().required(),    // Must exist AND must be a non-empty string
+    description: Joi.string().required(),
+    price: Joi.number().required().min(0), // Must be a number, >= 0
+    city: Joi.string().required(),
+    country: Joi.string().required(),
+    image: Joi.string().allow("", null)   // Optional — can be missing, empty, or null
+});
+
+// What Joi checks for each field:
+// title: Joi.string().required()
+//   - Is it present in req.body?   (required)
+//   - Is it a string?               (string)
+//   - Is it non-empty?              (implicit — '' fails .required())
+
+// price: Joi.number().required().min(0)
+//   - Is it present?               (required)
+//   - Is it a number (or numeric string)? (number — Joi auto-converts '100' to 100)
+//   - Is it >= 0?                  (min(0))
+
+// image: Joi.string().allow("", null)
+//   - Can be absent, empty string, or null — all OK
+//   - If present and non-empty, must be a string
+```
+
+### Why Joi sometimes rejects valid-looking data:
+```
+Problem: Your form sends { title: "...", price: "100" }
+                                                  ↑ a string! (forms always send strings)
+
+Joi.number() — does it accept strings?
+  YES — Joi auto-converts numeric strings like "100" to numbers (100)
+  NO  — if you have abortEarly: false and strict mode
+
+Solution: Joi's default is to coerce types (convert string to number)
+So "100" becomes 100 automatically — no problem for price fields
+```
+
+### Your `validateReview` middleware (in app.js):
+```js
+const { listingSchema, reviewSchema } = require('./schema.js');
+//                      ↑ Import reviewSchema too!
+
+const validateReview = (req, res, next) => {
+    let { error } = reviewSchema.validate(req.body);
+    if (error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new expressError(400, errMsg);
+    } else {
+        next();
+    }
+}
+```
+
+### Review Joi Schema (schema.js):
+```js
+module.exports.reviewSchema = Joi.object({
+    review: Joi.object({        // 'review' = wrapper key from the HTML form
+        rating: Joi.number().required().min(1).max(5),
+        comment: Joi.string().required(),
+    }).required()
+    // The form must send: { review: { rating: 4, comment: "Great!" } }
+    // NOT: { rating: 4, comment: "Great!" }  ← This would fail!
+});
+```
+
+### Why the `review` wrapper key?
+```html
+<!-- In your form, fields are named like: -->
+<input type="number" name="rating">    ← sends { rating: 4 }
+
+<!-- OR with a wrapper namespace: -->
+<input type="number" name="review[rating]">  ← sends { review: { rating: 4 } }
+
+<!-- The second format keeps review data cleanly separated from other form data -->
+<!-- It matches: Joi.object({ review: Joi.object({ rating: ... }) }) -->
+```
+
 ### How it's used (as route-level middleware):
 ```js
 //                     ↓ Runs BEFORE the async handler
 app.post('/listings', validateListing, wrapAsync(async (req, res) => {
     // Only reaches here if validation PASSED
-    // ...
+}));
+
+app.post('/listings/:id/reviews', validateReview, wrapAsync(async (req, res) => {
+    // Only reaches here if review validation PASSED
 }));
 ```
 
@@ -211,9 +303,9 @@ User submits form with empty title
     ↓
 validateListing runs
     ↓
-Joi says: "title is required"
+Joi says: "title" is required
     ↓
-throw new expressError(400, "title is required")
+throw new expressError(400, '"title" is required')
     ↓
 SKIPS the route handler entirely
     ↓

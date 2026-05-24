@@ -7,15 +7,16 @@
 ## 📋 TABLE OF CONTENTS
 1. [app.js — Main Server File](#appjs--main-server-file)
 2. [models/listing.js — Mongoose Model](#modelslistingjs--mongoose-model)
-3. [schema.js — Joi Validation](#schemajs--joi-validation)
-4. [utils/expressError.js — Custom Error](#utilsexpresserrorjs--custom-error)
-5. [utils/wrapAsync.js — Async Wrapper](#utilswrapasyncjs--async-wrapper)
-6. [init/init.js — Database Seeder](#initinitjs--database-seeder)
-7. [views/layouts/boilerplate.ejs](#viewslayoutsboilerplateejs)
-8. [views/includes/navbar.ejs](#viewsincludesnavbarejs)
-9. [views/includes/footer.ejs](#viewsincludesfooterejs)
-10. [views/listings/ — All Templates](#viewslistings--all-templates)
-11. [public/js/script.js — Client Validation](#publicjsscriptjs--client-validation)
+3. [models/review.js — Review Model](#modelsreviewjs--review-model)
+4. [schema.js — Joi Validation](#schemajs--joi-validation)
+5. [utils/expressError.js — Custom Error](#utilsexpresserrorjs--custom-error)
+6. [utils/wrapAsync.js — Async Wrapper](#utilswrapasyncjs--async-wrapper)
+7. [init/init.js — Database Seeder](#initinitjs--database-seeder)
+8. [views/layouts/boilerplate.ejs](#viewslayoutsboilerplateejs)
+9. [views/includes/navbar.ejs](#viewsincludesnavbarejs)
+10. [views/includes/footer.ejs](#viewsincludesfooterejs)
+11. [views/listings/ — All Templates](#viewslistings--all-templates)
+12. [public/js/script.js — Client Validation](#publicjsscriptjs--client-validation)
 
 ---
 
@@ -29,18 +30,29 @@ const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
 const Listing = require('./models/listing');
+const Review = require('./models/review.js');     // ← For reviews
 const path = require('path');
 const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const wrapAsync = require('./utils/wrapAsync');
 const expressError = require('./utils/expressError');
-const { listingSchema } = require('./schema.js');
+const { listingSchema, reviewSchema } = require('./schema.js');  // ← Both schemas
 
 // ============================================================
-//                   VALIDATION MIDDLEWARE
+//                   VALIDATION MIDDLEWARES
 // ============================================================
 const validateListing = (req, res, next) => {
     let {error} = listingSchema.validate(req.body);
+    if (error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new expressError(400, errMsg);
+    } else {
+        next();
+    }
+}
+
+const validateReview = (req, res, next) => {
+    let {error} = reviewSchema.validate(req.body);
     if (error) {
         let errMsg = error.details.map((el) => el.message).join(",");
         throw new expressError(400, errMsg);
@@ -140,6 +152,31 @@ app.delete('/listings/:id', wrapAsync(async (req, res) => {
     res.redirect('/listings');
 }));
 
+// SHOW — Must be at the end among :id routes!
+app.get('/listings/:id' , wrapAsync(async (req, res) => {
+    const {id} = req.params;
+    // populate('reviews') fills in the actual review documents (not just IDs)
+    const listing = await Listing.findById(id).populate('reviews');
+    res.render('listings/show.ejs', {listing});
+}));
+
+// ============================================================
+//                   REVIEW ROUTES
+// ============================================================
+
+// CREATE REVIEW
+app.post('/listings/:id/reviews', validateReview, wrapAsync(async (req, res) => {
+    let listing = await Listing.findById(req.params.id);
+    const review = new Review({
+        rating: req.body.rating,
+        comment: req.body.comment,
+    });
+    listing.reviews.push(review);  // Adds review._id to listing.reviews array
+    await review.save();
+    await listing.save();
+    res.redirect(`/listings/${listing._id}`);
+}));
+
 // ============================================================
 //                   404 CATCH-ALL ROUTE
 // ============================================================
@@ -154,15 +191,6 @@ app.use((err, req, res, next) => {
     let {statusCode = 500, message = "something went wrong"} = err;
     res.render("listings/error.ejs", {message, statusCode});
 });
-
-// ============================================================
-//              SHOW — Must be at the end!
-// ============================================================
-app.get('/listings/:id', wrapAsync(async (req, res) => {
-    const {id} = req.params;
-    const listing = await Listing.findById(id);
-    res.render('listings/show.ejs', {listing});
-}));
 ```
 
 ---
@@ -194,6 +222,12 @@ const listingSchema = new mongoose.Schema({
         type: String,
     },
     country: String,
+    reviews: [                           // ← Array of references to Review documents
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Review',               // ← Which model to look up when using populate()
+        }
+    ]
 });
 
 const Listing = mongoose.model('Listing', listingSchema);
@@ -202,11 +236,41 @@ module.exports = Listing;
 
 ---
 
+## MODELS/REVIEW.JS — REVIEW MODEL
+
+```js
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const reviewSchema = new Schema({
+    comment: {
+        type: String
+    },
+    rating: {
+        type: Number,
+        min: 1,
+        max: 5
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now    // Automatically set to current date/time when created
+    }
+});
+
+module.exports = mongoose.model('Review', reviewSchema);
+// Creates a 'reviews' collection in MongoDB
+```
+
+---
+
 ## SCHEMA.JS — JOI VALIDATION
+
+> ⚠️ **IMPORTANT BUG IN YOUR CURRENT schema.js:** `listingSchema` is exported TWICE—the second export overwrites the first. The fix is to use a DIFFERENT name for the second export: `reviewSchema`.
 
 ```js
 const Joi = require('joi');
 
+// Schema for validating listing form data
 module.exports.listingSchema = Joi.object({
     title: Joi.string().required(),
     description: Joi.string().required(),
@@ -214,6 +278,15 @@ module.exports.listingSchema = Joi.object({
     city: Joi.string().required(),
     country: Joi.string().required(),
     image: Joi.string().allow("", null)
+});
+
+// Schema for validating review form data
+// NOTE: This must be 'reviewSchema', NOT 'listingSchema' — otherwise it overwrites the one above!
+module.exports.reviewSchema = Joi.object({
+    review: Joi.object({         // 'review' = wrapper key from the form (name="review[rating]")
+        rating: Joi.number().required().min(1).max(5),
+        comment: Joi.string().required(),
+    }).required()
 });
 ```
 

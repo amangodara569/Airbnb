@@ -323,43 +323,213 @@ public/
 
 ---
 
-## EXPRESS ROUTER (COMING NEXT)
+## EXPRESS ROUTER — CODE ORGANIZATION
 
 ### The Problem:
 - All your routes are in `app.js` — it's getting long!
 - As you add reviews, auth, etc. it'll become 500+ lines
+- Hard to find, read, and maintain
 
 ### The Solution — Express Router:
-- Split routes into separate files
-- Group related routes together
+- Split routes into **separate files** by feature
+- Each file handles one resource (listings, reviews, users)
+- `app.js` becomes clean and short
 
-### How it will look (future structure):
+### New folder structure:
 ```
-routes/
-├── listing.js    ← All /listings routes
-├── review.js     ← All /listings/:id/reviews routes (future)
-└── user.js       ← All /signup, /login routes (future)
+project_1/
+├── app.js              ← Clean, short — just setup and imports
+└── routes/
+    ├── listing.js      ← All /listings routes
+    └── review.js       ← All /listings/:id/reviews routes
 ```
 
-### Preview of how Express Router works:
+### Step 1: Create `routes/listing.js`
 ```js
-// routes/listing.js
 const express = require('express');
-const router = express.Router();
+const router = express.Router();          // Create a mini-app / sub-router
 
-router.get('/', async (req, res) => { ... });        // /listings
-router.get('/new', (req, res) => { ... });            // /listings/new
-router.post('/', async (req, res) => { ... });        // POST /listings
-router.get('/:id', async (req, res) => { ... });      // /listings/:id
+// Import what the routes need
+const Listing = require('../models/listing');
+const wrapAsync = require('../utils/wrapAsync');
+const expressError = require('../utils/expressError');
+const { listingSchema } = require('../schema.js');
+
+// Validation middleware (moved here from app.js)
+const validateListing = (req, res, next) => {
+    let { error } = listingSchema.validate(req.body);
+    if (error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new expressError(400, errMsg);
+    } else {
+        next();
+    }
+};
+
+// ROUTES — use router.get instead of app.get
+// Notice: paths are now relative to /listings (no need to write /listings)
+router.get('/', wrapAsync(async (req, res) => {          // GET /listings
+    const alllistings = await Listing.find({});
+    res.render('listings/index.ejs', { listings: alllistings });
+}));
+
+router.get('/new', (req, res) => {                       // GET /listings/new
+    res.render('listings/new.ejs');
+});
+
+router.post('/', validateListing, wrapAsync(async (req, res) => { // POST /listings
+    let { title, description, price, city, country } = req.body;
+    const newListing = new Listing({ title, description, price, location: city, country });
+    await newListing.save();
+    res.redirect('/listings');
+}));
+
+router.get('/:id/edit', wrapAsync(async (req, res) => {  // GET /listings/:id/edit
+    const { id } = req.params;
+    const listing = await Listing.findById(id);
+    res.render('listings/edit.ejs', { listing });
+}));
+
+router.put('/:id', validateListing, wrapAsync(async (req, res) => { // PUT /listings/:id
+    const { id } = req.params;
+    let { title, description, price, city, country } = req.body;
+    await Listing.findByIdAndUpdate(id, { title, description, price, location: city, country });
+    res.redirect(`/listings/${id}`);
+}));
+
+router.delete('/:id', wrapAsync(async (req, res) => {    // DELETE /listings/:id
+    const { id } = req.params;
+    await Listing.findByIdAndDelete(id);
+    res.redirect('/listings');
+}));
+
+router.get('/:id', wrapAsync(async (req, res) => {       // GET /listings/:id
+    const { id } = req.params;
+    const listing = await Listing.findById(id).populate('reviews');
+    res.render('listings/show.ejs', { listing });
+}));
+
+module.exports = router;  // Export the router
+```
+
+### Step 2: Create `routes/review.js`
+```js
+const express = require('express');
+const router = express.Router({ mergeParams: true });
+//                              ↑ IMPORTANT!
+// mergeParams: true = allow this router to access :id from the parent router
+// Without it, req.params.id would be undefined in review routes!
+
+const Listing = require('../models/listing');
+const Review = require('../models/review');
+const wrapAsync = require('../utils/wrapAsync');
+const expressError = require('../utils/expressError');
+const { reviewSchema } = require('../schema.js');
+
+const validateReview = (req, res, next) => {
+    let { error } = reviewSchema.validate(req.body);
+    if (error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new expressError(400, errMsg);
+    } else {
+        next();
+    }
+};
+
+// POST /listings/:id/reviews
+// (In this file, just write '/' because the prefix /listings/:id/reviews is set in app.js)
+router.post('/', validateReview, wrapAsync(async (req, res) => {
+    let listing = await Listing.findById(req.params.id);
+    //                                          ↑ Works because of mergeParams: true!
+    const review = new Review({
+        rating: req.body.rating,
+        comment: req.body.comment,
+    });
+    listing.reviews.push(review);
+    await review.save();
+    await listing.save();
+    res.redirect(`/listings/${listing._id}`);
+}));
 
 module.exports = router;
-
-// app.js
-const listingRouter = require('./routes/listing');
-app.use('/listings', listingRouter);  // All routes in listing.js start with /listings
 ```
 
-> 📝 You'll implement this when the project grows bigger!
+### Step 3: Update `app.js` to use the routers
+```js
+// app.js — import the routers
+const listingRouter = require('./routes/listing');
+const reviewRouter = require('./routes/review');
+
+// ... all middleware setup stays the same ...
+
+// Mount the routers (instead of individual app.get/post/put/delete calls)
+app.use('/listings', listingRouter);
+//      ↑ All routes in listing.js are now prefixed with /listings
+
+app.use('/listings/:id/reviews', reviewRouter);
+//      ↑ All routes in review.js are prefixed with /listings/:id/reviews
+
+// 404 and error handler stay at the bottom of app.js
+```
+
+### Why `mergeParams: true` matters:
+```
+Without mergeParams:
+  Parent route: /listings/:id/reviews
+  Inside review.js router: req.params = {}  ← EMPTY! Can't find :id!
+
+With mergeParams: true:
+  Parent route: /listings/:id/reviews
+  Inside review.js router: req.params = { id: 'abc123' }  ← Works!
+```
+
+### How app.js looks AFTER using Router:
+```js
+const express = require('express');
+const app = express();
+const mongoose = require('mongoose');
+const path = require('path');
+const methodOverride = require('method-override');
+const ejsMate = require('ejs-mate');
+const expressError = require('./utils/expressError');
+
+// Import routers
+const listingRouter = require('./routes/listing');
+const reviewRouter = require('./routes/review');
+
+// Middleware setup
+app.engine('ejs', ejsMate);
+app.use(express.urlencoded({ extended: true }));
+app.use(methodOverride('_method'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views/'));
+
+// Database connection
+main().then(() => console.log('database up')).catch(err => console.log(err));
+async function main() {
+    await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
+}
+
+app.listen(3000, () => console.log('server running'));
+
+// Routes — clean! Only 2 lines instead of 50+
+app.use('/listings', listingRouter);
+app.use('/listings/:id/reviews', reviewRouter);
+
+// 404 handler
+app.all(/(.*)/, (req, res, next) => {
+    next(new expressError(404, 'page not found'));
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+    let { statusCode = 500, message = 'something went wrong' } = err;
+    res.render('listings/error.ejs', { message, statusCode });
+});
+```
+
+> 📝 You'll implement Express Router in the next phase!
 
 ---
 

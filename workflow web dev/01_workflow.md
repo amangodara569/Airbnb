@@ -13,7 +13,8 @@
 6. [Phase 6 - Error Handling](#phase-6---error-handling)
 7. [Phase 7 - Validation](#phase-7---validation)
 8. [Phase 8 - Seed Data (Init)](#phase-8---seed-data-init)
-9. [What Comes Next (Not done yet)](#whats-next---future-phases)
+9. [Phase 9 - Reviews Feature](#phase-9---reviews-feature-completed)
+10. [What Comes Next (Not done yet)](#whats-next---future-phases)
 
 ---
 
@@ -443,48 +444,148 @@ module.exports = { data: sampleListings };
 
 ---
 
+## PHASE 9 - REVIEWS FEATURE ✅ COMPLETED
+
+> Full details in `09_reviews.md`
+
+### What is the Reviews feature?
+- Users can leave a **star rating + comment** on any listing
+- A listing can have **many reviews** (One-to-Many relationship)
+- Reviews are stored in a **separate collection** and referenced from the listing
+
+### Step 1: Create the Review Model (`models/review.js`)
+```js
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const reviewSchema = new Schema({
+    comment: {
+        type: String
+    },
+    rating: {
+        type: Number,
+        min: 1,
+        max: 5
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now     // Auto-fill current timestamp
+    }
+});
+
+module.exports = mongoose.model('Review', reviewSchema);
+// Creates a 'reviews' collection in MongoDB
+```
+
+### Step 2: Add reviews array to Listing Model
+```js
+// models/listing.js — add this field:
+reviews: [
+    {
+        type: mongoose.Schema.Types.ObjectId,  // Just store the Review's _id
+        ref: 'Review'                           // Tell Mongoose which model to reference
+    }
+]
+// This means: each listing stores an array of Review IDs, not the actual review data
+```
+
+### Step 3: Add reviewSchema to schema.js (Joi validation)
+```js
+// schema.js — ADD this as a SEPARATE export (don't overwrite listingSchema!):
+module.exports.reviewSchema = Joi.object({
+    review: Joi.object({                  // 'review' = the wrapper key from the form
+        rating: Joi.number().required().min(1).max(5),
+        comment: Joi.string().required(),
+    }).required()
+});
+```
+
+### Step 4: Create the Review Route in app.js
+```js
+// POST /listings/:id/reviews  — Creates a new review for a listing
+app.post('/listings/:id/reviews', validateReview, wrapAsync(async (req, res) => {
+    let listing = await Listing.findById(req.params.id);  // Find the listing
+    const review = new Review({                            // Create the review
+        rating: req.body.rating,
+        comment: req.body.comment,
+    });
+    listing.reviews.push(review);  // Add review's _id to the listing's reviews array
+    await review.save();           // Save review to 'reviews' collection
+    await listing.save();          // Save listing (with updated reviews array)
+    res.redirect(`/listings/${listing._id}`);
+}));
+```
+
+### Step 5: Use populate() to show reviews on the listing page
+```js
+// In the SHOW route — change findById to use populate:
+const listing = await Listing.findById(id).populate('reviews');
+// Without populate: listing.reviews = [ ObjectId('abc'), ObjectId('def') ]
+// With populate:    listing.reviews = [ { comment: '...', rating: 5, ... }, ... ]
+// populate() replaces the IDs with the actual Review documents
+```
+
+### Step 6: Add review form to show.ejs
+```html
+<!-- Form to submit a new review -->
+<form action="/listings/<%= listing._id %>/reviews" method="POST">
+    <input type="number" name="rating" min="1" max="5" required>
+    <textarea name="comment" required></textarea>
+    <button type="submit">Submit Review</button>
+</form>
+
+<!-- Display all reviews for this listing -->
+<% for (let review of listing.reviews) { %>
+    <div class="review-card">
+        <p>Rating: <%= review.rating %>/5</p>
+        <p><%= review.comment %></p>
+    </div>
+<% } %>
+```
+
+---
+
 ## WHAT'S NEXT - FUTURE PHASES
 
 These are the things you'll be adding to your project next:
 
-### Phase 9: MongoDB Relationships (You're exploring this now)
-- One to Few (embed documents)
-- One to Many (reference by ID)
-- Many to Many
-- `populate()` to fill referenced data
+### Phase 10: Delete Reviews
+- DELETE /listings/:id/reviews/:reviewId route
+- `$pull` operator to remove from array
+- Mongoose middleware (post middleware) to cascade delete when listing is deleted
 
-### Phase 10: Reviews Feature
-- Create Review model
-- Add reviews to listings (one-to-many relationship)
-- Review routes (create, delete)
+### Phase 11: Express Router (Code Organization)
+- Split `app.js` into separate route files
+- `routes/listing.js` and `routes/review.js`
+- See `04_routing.md` for complete implementation details
 
-### Phase 11: Authentication (Login/Signup)
+### Phase 12: Authentication (Login/Signup)
 - `passport.js` package
 - User model with password hashing
 - Login, Signup, Logout routes
 - Sessions & Cookies
 
-### Phase 12: Authorization
+### Phase 13: Authorization
 - Only logged-in users can create/edit/delete
 - Only the owner can edit/delete their own listing
 - `isLoggedIn` middleware
 - `isOwner` middleware
 
-### Phase 13: Image Upload
+### Phase 14: Flash Messages & Sessions
+- `connect-flash` for success/error messages
+- `express-session` for session management
+
+### Phase 15: Image Upload
 - `multer` for file uploads
 - Cloudinary for cloud image storage
 - Upload images instead of just URLs
 
-### Phase 14: Maps
+### Phase 16: Maps
 - Mapbox or Google Maps API
 - Geocoding (convert location to coordinates)
 - Show listing on a map
 
-### Phase 15: Flash Messages & Sessions
-- `connect-flash` for success/error messages
-- `express-session` for session management
-
-### Phase 16: Deployment
+### Phase 17: Deployment
 - Environment variables (`.env` file)
 - MongoDB Atlas (cloud database)
 - Render/Railway for hosting

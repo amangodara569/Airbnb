@@ -7,10 +7,24 @@ const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const wrapAsync = require('./utils/wrapAsync');// for error handling
 const expressError = require('./utils/expressError');
-const { listingSchema } = require('./schema.js');
+const { listingSchema, reviewSchema } = require('./schema.js');
+//requireing review
+const Review = require('./models/review.js');
+
 //db schema validation, created it into a middleware this can be used as parameter in async routes
 const validateListing = (req, res, next) => {
     let {error} = listingSchema.validate(req.body);
+    if (error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new expressError(400, errMsg);
+    } else {
+        next();
+    }
+}
+
+//to validate review
+const validateReview = (req, res, next) => {
+    let {error} = reviewSchema.validate(req.body);
     if (error) {
         let errMsg = error.details.map((el) => el.message).join(",");
         throw new expressError(400, errMsg);
@@ -124,9 +138,23 @@ app.delete('/listings/:id', wrapAsync(async (req, res)=>{
 //show route, (click on listing title to view more about it)
 app.get('/listings/:id' , wrapAsync(async (req, res)=>{
     const {id} = req.params;
-    const listing = await Listing.findById(id);
+    const listing = await Listing.findById(id).populate('reviews'); //populate is used to get the review data from the review collection, because in listing schema we have defined reviews as an array of object ids, so we need to populate it to get the actual review data, otherwise we will get only the object ids of the reviews, and we wont be able to show the review data on the show page of the listing, so we need to populate it to get the actual review data, and then we can show it on the show page of the listing.
     res.render('listings/show.ejs', {listing});
 }));//should be at the end of the routes, otherwise it will be treated as a dynamic route and will override the new route.
+
+//route for reviews will be in the show page of the listing, so we will create a form there and then we will post the review to the listing, so we will create a new route for that in the show page of the listing, and then we will create a new route for that in the app.js file.
+
+app.post('/listings/:id/reviews', validateReview, wrapAsync(async (req, res)=>{
+    let listing = await Listing.findById(req.params.id);
+    const review = new Review({
+        rating: req.body.rating,
+        comment: req.body.comment,
+    });
+    listing.reviews.push(review);
+    await review.save();
+    await listing.save();
+    res.redirect(`/listings/${listing._id}`);
+}));
 
 
 //if users try to access a non existing route

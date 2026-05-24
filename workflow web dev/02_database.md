@@ -529,13 +529,11 @@ node init/init.js
 
 ## MONGODB RELATIONSHIPS
 
-### You're starting to explore this! Here's what you need to know:
-
 ### Types of Relationships:
 | Type | Example | Implementation |
 |------|---------|---------------|
 | One to Few | User → Home Addresses (max 2-3) | Embed inside parent document |
-| One to Many | User → Posts (could be 100s) | Store reference (ObjectId) |
+| One to Many | Listing → Reviews (could be many) | Store reference (ObjectId) |
 | One to Bajillions | User → Log entries (millions) | Store reference in child |
 | Many to Many | Students ↔ Courses | Array of references on both sides |
 
@@ -551,16 +549,14 @@ REFERENCE (store ObjectId) when:
   ✅ Data is large or growing
   ✅ Data needs to be accessed independently
   ✅ Data is shared between multiple parents
-  Example: User's posts, Reviews on a listing
+  Example: Reviews on a listing
 ```
 
-### One to Few — Embed (from your notes):
+### One to Few — Embed:
 ```js
 // You DON'T need a separate model for the embedded data
-// Example: Adding addresses to a User model
 const userSchema = new mongoose.Schema({
     name: String,
-    email: String,
     addresses: [                    // Array of sub-documents
         {
             street: String,
@@ -573,27 +569,189 @@ const userSchema = new mongoose.Schema({
 // No separate "Address" model needed
 ```
 
-### One to Many — Reference (you'll use this for Reviews):
+### One to Many — Reference (what you use for Reviews):
 ```js
-// Listing model (parent)
+// Listing model (parent) — stores just the IDs of its reviews
 const listingSchema = new mongoose.Schema({
     title: String,
     reviews: [
         {
             type: mongoose.Schema.Types.ObjectId,  // Store just the ID
-            ref: 'Review'                          // Reference to Review model
+            ref: 'Review'                          // Which model to reference
         }
     ]
 });
 
-// Review model (child) — separate model
+// Review model (child) — separate collection
 const reviewSchema = new mongoose.Schema({
-    body: String,
-    rating: Number,
+    comment: String,
+    rating: { type: Number, min: 1, max: 5 },
+    createdAt: { type: Date, default: Date.now }
+});
+
+// How it looks in MongoDB:
+// Listing document:
+// { title: "Beach House", reviews: [ObjectId('aaa'), ObjectId('bbb')] }
+//                                          ↑ just the IDs!
+
+// Review documents (in reviews collection):
+// { _id: ObjectId('aaa'), rating: 5, comment: "Amazing!" }
+// { _id: ObjectId('bbb'), rating: 4, comment: "Very nice!" }
+```
+
+---
+
+## POPULATE() — FILLING IN REFERENCED DATA
+
+### The Problem:
+```js
+// Without populate:
+const listing = await Listing.findById(id);
+console.log(listing.reviews);
+// Output: [ ObjectId('aaa'), ObjectId('bbb') ]  ← Just IDs, useless for display!
+```
+
+### The Solution — `.populate()`:
+```js
+// With populate:
+const listing = await Listing.findById(id).populate('reviews');
+console.log(listing.reviews);
+// Output: [
+//   { _id: ObjectId('aaa'), rating: 5, comment: "Amazing!", createdAt: Date },
+//   { _id: ObjectId('bbb'), rating: 4, comment: "Very nice!", createdAt: Date }
+// ]  ← Full review objects! Ready to display.
+```
+
+### How populate works:
+```
+1. Mongoose fetches the listing from 'listings' collection
+2. It sees: reviews: [ ObjectId('aaa'), ObjectId('bbb') ]
+3. It goes to the 'reviews' collection and fetches documents with those IDs
+4. It REPLACES the ID array with the actual review documents
+5. You get back a fully filled listing object
+```
+
+### Your code in the SHOW route:
+```js
+app.get('/listings/:id', wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const listing = await Listing.findById(id).populate('reviews');
+    //                                          ↑ 'reviews' = the field name in listingSchema
+    res.render('listings/show.ejs', { listing });
+}));
+```
+
+### Chaining multiple populates:
+```js
+// Future: populate both reviews AND owner (when you add auth)
+const listing = await Listing
+    .findById(id)
+    .populate('reviews')     // fill in reviews
+    .populate('owner');      // fill in owner user data
+```
+
+### Nested populate (populate inside a populate):
+```js
+// Example: populate reviews AND within each review, populate the author
+const listing = await Listing.findById(id).populate({
+    path: 'reviews',
+    populate: {
+        path: 'author'   // each review's author field
+    }
 });
 ```
 
-> 📝 More will be added here as you progress through relationships!
+---
+
+## MONGOOSE MIDDLEWARE — CASCADE DELETE
+
+### The Problem:
+When you delete a listing, its reviews are still in the `reviews` collection.
+```
+Listings collection:  { _id: abc, reviews: [ObjectId('r1'), ObjectId('r2')] }  ← deleted
+Reviews collection:   { _id: r1, comment: "...", rating: 5 }  ← ORPHANED! Still exists!
+                      { _id: r2, comment: "...", rating: 4 }  ← ORPHANED! Still exists!
+```
+These orphaned reviews waste storage and pollute the database.
+
+### The Solution — Mongoose post middleware:
+```js
+// In models/listing.js — after defining listingSchema:
+listingSchema.post('findOneAndDelete', async function(deletedListing) {
+    // This runs AFTER a listing is deleted
+    // 'deletedListing' = the document that was just deleted
+    if (deletedListing) {
+        // Delete all reviews whose _id is in the listing's reviews array
+        await Review.deleteMany({
+            _id: { $in: deletedListing.reviews }
+            //   ↑ $in = MongoDB operator: "where _id is IN this array"
+        });
+    }
+});
+```
+
+### Important: Import Review in listing.js
+```js
+// models/listing.js — add at the top:
+const Review = require('./review');  // Need this to call Review.deleteMany
+
+// Note: This creates a circular reference BUT Mongoose handles it fine
+// listing.js → requires review.js (to delete reviews)
+// review.js  → doesn't require listing.js
+// So there's no actual circular dependency problem
+```
+
+### When does `findOneAndDelete` trigger?
+```js
+// In your DELETE route:
+await Listing.findByIdAndDelete(id);
+// findByIdAndDelete internally uses findOneAndDelete
+// So your post middleware fires automatically after this!
+```
+
+### What `$in` does:
+```js
+// $in = matches any document whose field value is IN the given array
+await Review.deleteMany({ _id: { $in: [ObjectId('r1'), ObjectId('r2')] } });
+// This deletes review r1 AND review r2 in ONE database call
+// Much more efficient than deleting them one by one
+```
+
+### Full updated listing.js with cascade delete:
+```js
+const mongoose = require('mongoose');
+const Review = require('./review');  // ← Import Review model
+
+const listingSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    description: { type: String },
+    image: {
+        filename: String,
+        url: { type: String, default: "https://..." }
+    },
+    price: { type: Number },
+    location: { type: String },
+    country: String,
+    reviews: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Review'
+        }
+    ]
+});
+
+// Post middleware — runs after findOneAndDelete
+listingSchema.post('findOneAndDelete', async function(deletedListing) {
+    if (deletedListing) {
+        await Review.deleteMany({ _id: { $in: deletedListing.reviews } });
+    }
+});
+
+const Listing = mongoose.model('Listing', listingSchema);
+module.exports = Listing;
+```
+
+> 📝 Cascade delete will be added in the next phase!
 
 ---
 

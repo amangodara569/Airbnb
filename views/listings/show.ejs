@@ -46,4 +46,84 @@
             </button>
         </form>
     </div>
+
+    <!-- FOR REVIEWS -->
+    <div class="review-section">
+        <div class="review-form-card">
+            <h4>Leave a review</h4>
+            <form class="review-form needs-validation" action="/listings/<%= listing._id %>/reviews" method="POST" novalidate>
+                <!-- needs validation is defined in /js/review-validation.js -->
+                <div class="rating-row">
+                    <label for="rating">Rating:</label>
+                    <input class="rating-range" type="range" min="1" max="5" value="3" id="rating" name="review[rating]">
+                    <span class="rating-value" id="ratingValue">3</span>
+                </div>
+
+                <div class="comment-row">
+                    <label for="comment">Comment:</label>
+                    <textarea class="comment-textarea" id="comment" name="review[comment]" rows="4" cols="30" placeholder="Share your experience..." required></textarea>
+
+                    <!-- validation -->
+                    <div class="invalid-feedback">
+                        Please provide a comment for your review.
+                    </div>
+                    <div class="valid-feedback">
+                        Looks good!
+                    </div>
+                </div>
+
+                <button class="btn-action btn-primary" type="submit">Submit Review</button>
+            </form>
+        </div>
+
+        <div class="reviews-block">
+            <div class="reviews-header">
+                <h4>All reviews</h4>
+                <span class="reviews-count"><%= listing.reviews.length %> total</span>
+            </div>
+
+            <div class="reviews-list">
+                <% if(listing.reviews.length){ %>
+                    <% for(let review of listing.reviews){ %>
+                        <article class="review-card">
+                            <div class="review-card-top">
+                                <div class="review-author">Guest review</div>
+                                <div class="review-rating-badge">
+                                    <span class="review-rating-number"><%= review.rating %></span>
+                                    <span class="review-rating-stars"><%= '★'.repeat(review.rating) %><%= '☆'.repeat(5 - review.rating) %></span>
+                                </div>
+                            </div>
+
+                            <div class="review-comment"><%= review.comment %></div>
+
+                            <div class="review-meta">
+                                <span>Rating feedback</span>
+                                <% if(review.createdAt){ %>
+                                    <span><%= new Date(review.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+                                <% } %>
+                            </div>
+                        </article>
+                    <% } %>
+                <% } else { %>
+                    <div class="review-empty-state">
+                        No reviews yet. Be the first to leave feedback.
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    
+<!-- to show rating value -->
+    <script>
+        (function(){
+            const range = document.getElementById('rating');
+            const val = document.getElementById('ratingValue');
+            if(range && val){
+                const update = () => val.textContent = range.value;
+                range.addEventListener('input', update);
+                update();
+            }
+        })();
+    </script>
 </div>
