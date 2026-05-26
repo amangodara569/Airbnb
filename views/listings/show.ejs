@@ -102,6 +102,10 @@
                                     <span><%= new Date(review.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
                                 <% } %>
                             </div>
+                            <!-- deleting a review -->
+                            <form action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE" method="POST" style="margin-top:8px;">
+                                <button type="submit" class="btn-action btn-delete" style="padding:6px 10px;">🗑️ Delete Review</button>
+                            </form>
                         </article>
                     <% } %>
                 <% } else { %>
