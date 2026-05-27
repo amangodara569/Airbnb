@@ -14,7 +14,9 @@
 7. [Phase 7 - Validation](#phase-7---validation)
 8. [Phase 8 - Seed Data (Init)](#phase-8---seed-data-init)
 9. [Phase 9 - Reviews Feature](#phase-9---reviews-feature-completed)
-10. [What Comes Next (Not done yet)](#whats-next---future-phases)
+10. [Phase 10 - Delete Reviews](#phase-10---delete-reviews-completed)
+11. [Phase 11 - Express Router](#phase-11---express-router-completed)
+12. [What Comes Next (Not done yet)](#whats-next---future-phases)
 
 ---
 
@@ -545,50 +547,142 @@ const listing = await Listing.findById(id).populate('reviews');
 
 ---
 
+## PHASE 10 - DELETE REVIEWS ✅ COMPLETED
+
+> Full details in `09_reviews.md`
+
+### What was added:
+- DELETE route for reviews
+- `$pull` operator to remove the review ID from the listing's array
+- Both the review document AND the reference in the listing are cleaned up
+
+### The Delete Review Route (`route/review.js`):
+```js
+// DELETE /listings/:id/reviews/:reviewId
+router.delete('/:id/reviews/:reviewId', wrapAsync(async (req, res) => {
+    const { id, reviewId } = req.params;
+
+    // Step 1: Remove reviewId from listing's reviews array
+    await Listing.findByIdAndUpdate(id, {
+        $pull: { reviews: reviewId }
+        // $pull removes reviewId from the reviews array
+    });
+
+    // Step 2: Delete the actual review document
+    await Review.findByIdAndDelete(reviewId);
+
+    res.redirect(`/listings/${id}`);
+}));
+```
+
+### Delete button in show.ejs:
+```html
+<% for (let review of listing.reviews) { %>
+    <div class="review-card">
+        <p>Rating: <%= review.rating %>/5</p>
+        <p><%= review.comment %></p>
+
+        <!-- Delete review button -->
+        <form action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE" method="POST">
+            <button type="submit" class="btn btn-sm btn-danger">Delete Review</button>
+        </form>
+    </div>
+<% } %>
+```
+
+---
+
+## PHASE 11 - EXPRESS ROUTER ✅ COMPLETED
+
+> Full details in `04_routing.md`
+
+### What changed:
+- All listing routes moved from `app.js` to `route/listing.js`
+- All review routes moved from `app.js` to `route/review.js`
+- `app.js` is now clean — it just mounts the routers
+
+### Your current `app.js` (clean version):
+```js
+const express = require('express');
+const app = express();
+const mongoose = require('mongoose');
+const path = require('path');
+const methodOverride = require('method-override');
+const ejsMate = require('ejs-mate');
+const expressError = require('./utils/expressError');
+
+// Routers
+const listings = require('./route/listing.js');
+const reviews = require('./route/review.js');
+
+app.engine('ejs', ejsMate);
+app.use(express.urlencoded({ extended: true }));
+app.use(methodOverride('_method'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views/'));
+
+// Mount routers
+app.use('/listings', listings);
+app.use('/listings/:id/reviews', reviews);
+
+main().then(() => console.log('database are up')).catch(err => console.log(err));
+async function main() {
+    await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
+}
+
+app.listen(3000, () => console.log('server is up and running'));
+
+app.get('/', (req, res) => res.send('working fine'));
+
+app.all(/(.*)/, (req, res, next) => {
+    next(new expressError(404, 'page not found'));
+});
+
+app.use((err, req, res, next) => {
+    let { statusCode = 500, message = 'something went wrong' } = err;
+    res.render('listings/error.ejs', { message, statusCode });
+});
+```
+
+---
+
 ## WHAT'S NEXT - FUTURE PHASES
 
 These are the things you'll be adding to your project next:
 
-### Phase 10: Delete Reviews
-- DELETE /listings/:id/reviews/:reviewId route
-- `$pull` operator to remove from array
-- Mongoose middleware (post middleware) to cascade delete when listing is deleted
-
-### Phase 11: Express Router (Code Organization)
-- Split `app.js` into separate route files
-- `routes/listing.js` and `routes/review.js`
-- See `04_routing.md` for complete implementation details
-
 ### Phase 12: Authentication (Login/Signup)
-- `passport.js` package
-- User model with password hashing
-- Login, Signup, Logout routes
-- Sessions & Cookies
+- Install: `passport`, `passport-local`, `passport-local-mongoose`
+- User model with automatic password hashing
+- Login, Signup, Logout routes (`route/auth.js`)
+- See `10_sessions_cookies.md` for the session setup needed
 
-### Phase 13: Authorization
-- Only logged-in users can create/edit/delete
-- Only the owner can edit/delete their own listing
-- `isLoggedIn` middleware
-- `isOwner` middleware
+### Phase 13: Sessions + Flash Messages
+- `express-session` + `connect-mongo` (store sessions in MongoDB)
+- `connect-flash` for one-time success/error messages
+- `res.locals` middleware to make messages available in all templates
+- See `10_sessions_cookies.md` for full code
 
-### Phase 14: Flash Messages & Sessions
-- `connect-flash` for success/error messages
-- `express-session` for session management
+### Phase 14: Authorization
+- `isLoggedIn` middleware — redirect to login if not authenticated
+- `isOwner` middleware — 403 if user doesn't own the listing
+- Store `owner` reference on Listing model
 
 ### Phase 15: Image Upload
-- `multer` for file uploads
-- Cloudinary for cloud image storage
-- Upload images instead of just URLs
+- `multer` for handling file uploads from forms
+- `cloudinary` + `multer-storage-cloudinary` for cloud storage
+- Replace image URL fields with actual file uploads
 
 ### Phase 16: Maps
-- Mapbox or Google Maps API
-- Geocoding (convert location to coordinates)
-- Show listing on a map
+- Mapbox GL JS or Leaflet.js
+- Geocoding (convert city/country to latitude/longitude)
+- Show listing location on an interactive map
 
 ### Phase 17: Deployment
-- Environment variables (`.env` file)
-- MongoDB Atlas (cloud database)
-- Render/Railway for hosting
+- MongoDB Atlas (cloud database, free tier)
+- Render.com for hosting (connects to GitHub, free tier)
+- Environment variables via `.env` + Render's dashboard
+- See `11_project_mental_map.md` for deployment checklist
 
 ---
 
@@ -604,6 +698,7 @@ These are the things you'll be adding to your project next:
 | `.save()` | Save to database | `newListing.save()` |
 | `Model.insertMany(array)` | Insert many at once | `Listing.insertMany(data)` |
 | `Model.deleteMany({})` | Delete all | `Listing.deleteMany({})` |
+| `.populate('field')` | Fill in referenced docs | `Listing.findById(id).populate('reviews')` |
 
 ## 🧠 QUICK REFERENCE: Common Express Methods
 
@@ -612,10 +707,12 @@ These are the things you'll be adding to your project next:
 | `req.body` | Data from form/POST request | `req.body.title` |
 | `req.params` | Data from URL (`:id`) | `req.params.id` |
 | `req.query` | Data from URL query (`?key=value`) | `req.query.search` |
+| `req.session` | Session data (after express-session) | `req.session.userId` |
+| `req.flash()` | Flash messages (after connect-flash) | `req.flash('success', 'Done!')` |
 | `res.render()` | Show a template | `res.render('index.ejs', {data})` |
 | `res.redirect()` | Go to different URL | `res.redirect('/listings')` |
 | `res.send()` | Send plain text/HTML | `res.send('Hello')` |
-| `res.json()` | Send JSON data | `res.json({key: value})` |
+| `res.locals` | Variables for all templates | `res.locals.user = req.user` |
 
 ---
 

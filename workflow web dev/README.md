@@ -1,7 +1,7 @@
 # 📖 WORKFLOW WEB DEV — Your MERN Learning Reference
 > Personal reference notes for full-stack web development
 > Based on YOUR Wanderlust (Airbnb Clone) project
-> **Current Level:** CRUD + Validation + Error Handling + Reviews (One-to-Many Relationship) ✅
+> **Current Level:** CRUD + Validation + Error Handling + Reviews + Express Router + Delete Reviews ✅
 
 ---
 
@@ -16,8 +16,10 @@
 | 05 | [05_middlewares.md](./05_middlewares.md) | **Middlewares** — Types, built-in middleware, custom middleware, validation middleware (listing + review), error handling, wrapAsync, custom error class, complete error flow. |
 | 06 | [06_packages_config.md](./06_packages_config.md) | **NPM Packages & Config** — All packages explained, nodemon, .gitignore, environment variables, future packages list. |
 | 07 | [07_css_styling.md](./07_css_styling.md) | **CSS & Styling** — Bootstrap usage, custom CSS organization, glassmorphism, static files, Font Awesome. |
-| 08 | [08_code_reference.md](./08_code_reference.md) | **Complete Code Reference** — Every important code file in your project, copy-paste ready (updated with Reviews). |
+| 08 | [08_code_reference.md](./08_code_reference.md) | **Complete Code Reference** — Every important code file in your project, copy-paste ready (updated with Reviews + Router). |
 | 09 | [09_reviews.md](./09_reviews.md) | **Reviews Feature** — Full deep dive into Reviews: model, routes, templates, populate(), Joi validation, cascade delete. |
+| 10 | [10_sessions_cookies.md](./10_sessions_cookies.md) | **Sessions & Cookies** — Theory, cookie-parser, signed cookies, express-session, connect-mongo, connect-flash, flash messages, security best practices. |
+| 11 | [11_project_mental_map.md](./11_project_mental_map.md) | **Project Mental Map** — How a senior dev thinks, design resources, AI tools, fastest path for any project type, universal folder structure. |
 
 ---
 
@@ -36,27 +38,27 @@
 - [x] Error handling middleware
 - [x] 404 catch-all route
 - [x] Client-side validation (Bootstrap)
-- [x] Server-side validation (Joi) — for Listings
-- [x] Validation middleware (validateListing)
+- [x] Server-side validation (Joi) — for Listings & Reviews
+- [x] Validation middleware (validateListing + validateReview)
 - [x] Review model (One-to-Many relationship)
 - [x] Reviews added to Listing model (array of ObjectIds)
 - [x] POST /listings/:id/reviews — Create review route
-- [x] Joi validation for reviews (validateReview middleware)
+- [x] DELETE /listings/:id/reviews/:reviewId — Delete review route
 - [x] populate('reviews') — Show reviews on listing page
 - [x] Reviews displayed on show.ejs page
+- [x] Express Router — routes split into `route/listing.js` + `route/review.js`
+- [x] `$pull` operator to remove review from listing array
 
 ### 🔜 What's NEXT:
-- [ ] Delete Review route (DELETE /listings/:id/reviews/:reviewId)
-- [ ] Mongoose middleware — cascade delete reviews when listing is deleted
-- [ ] Express Router (split routes into files)
-- [ ] Star rating display for reviews
-- [ ] Authentication (Passport.js — login/signup)
-- [ ] Authorization (isLoggedIn, isOwner)
-- [ ] Sessions & Cookies
-- [ ] Flash messages
+- [ ] Mongoose post middleware — cascade delete reviews when listing is deleted
+- [ ] Authentication (Passport.js — login/signup/logout)
+- [ ] User model with passport-local-mongoose
+- [ ] Sessions (express-session + connect-mongo)
+- [ ] Flash messages (connect-flash)
+- [ ] Authorization (isLoggedIn, isOwner middlewares)
 - [ ] Image upload (Multer + Cloudinary)
 - [ ] Maps (Mapbox)
-- [ ] Deployment
+- [ ] Deployment (Render + MongoDB Atlas)
 
 ---
 
@@ -70,16 +72,15 @@
 6. **Installing a package?** → Check `06_packages_config.md` for what each package does
 7. **Styling a page?** → Check `07_css_styling.md` for design patterns
 8. **Need to copy code?** → Check `08_code_reference.md` for all code snippets
+9. **Cookies/Sessions?** → Check `10_sessions_cookies.md` for theory and working code
+10. **Starting a new project?** → Check `11_project_mental_map.md` for the full process
 
 ---
 
-## ⚠️ KNOWN BUG
+## ✅ KNOWN BUGS — FIXED
 
-There's a typo in `utils/wrapAsync.js` — `fb` should be `fn`. See `08_code_reference.md` for the fix.
-
-## ⚠️ KNOWN ISSUE IN SCHEMA.JS
-
-`listingSchema` is exported **twice** in `schema.js` — the second export overwrites the first, so `listingSchema` actually contains the `reviewSchema` definition. This means listing validation is broken! Fix: rename the second export to `reviewSchema`. See `09_reviews.md` for details.
+- `utils/wrapAsync.js` typo (`fb` → `fn`) — **FIXED**
+- `schema.js` double export issue — **FIXED** (`reviewSchema` is now a separate export)
 
 ---
 
