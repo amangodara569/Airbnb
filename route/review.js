@@ -1,6 +1,6 @@
 const express = require('express');
 
-const router = express.Router();
+const router = express.Router({mergeParams: true}); //router instance to define review related routes, mergeParams is used to access the params from the parent router, in this case we need to access the id of the listing from the parent router, so we need to use mergeParams: true, otherwise we won't be able to access the id of the listing in the review router file.
 
 const wrapAsync = require('../utils/wrapAsync');
 const expressError = require('../utils/expressError');
