@@ -5,11 +5,34 @@ const path = require('path');
 const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const expressError = require('./utils/expressError');
-
+const session = require('express-session');
+const flash = require('connect-flash');
 //requireing router files
 const listings = require("./route/listing.js")
 const reviews = require("./route/review.js")
+const flash = requrire("connect-flash");
 
+
+//cookies and sessions
+const sessionOptions = {
+    secret: "mysecretkey",
+    resave:false,
+    saveUninitialized: true,
+    cookie: {
+        expires: Date.now()+1000*60*60*24, //this means that the cookie will expire in 24 hours save data for 24 hours, after that it will delete it
+        maxAge: 1000*60*60*24, //this means that the cookie will expire in 24 hours
+        httpOnly: true, //this means that the cookie cannot be accessed by client side javascript, it can only be accessed by the server, this is a security measure to prevent cross site scripting attacks, if we set it to false, then the cookie can be accessed by client side javascript, which can be a security risk, so we set it to true to prevent that.}
+    }
+}
+app.use(session(sessionOptions));
+//using flash after session, because flash uses session to store the messages, so we have to use session before flash
+app.use(flash());
+//middleware for flash
+app.use((req, res, next)=>{
+    res.locals.success = req.flash('success'); //this will make the success message available in all the templates, so that we can display it in the index page after creating a new listing, we can also use it to display error messages if there is any error while creating a new listing, for example if there is a validation error, we can set the flash message in the validateListing middleware and then display it in the index route, so that when the user tries to create a new listing with invalid data, they will see an error message on the index page.
+    res.locals.error = req.flash('error');
+    next();
+});//now we need to add this in ejs template to display
 
 //basically we use it for creating boiler plate code for our templates, like header and footer, so we don't have to repeat the same code in every template.
 //that can be used again and again

@@ -464,7 +464,7 @@ db.sessions.find()
 
 ---
 
-## CONNECT-FLASH — FLASH MESSAGES
+ ## CONNECT-FLASH — FLASH MESSAGES
 
 ### What are flash messages?
 A flash message is a **one-time message** shown after a redirect.

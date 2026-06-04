@@ -48,6 +48,8 @@ router.post('/', validateListing, wrapAsync(async (req, res, next)=>{
             country: country,
         });
         await newListing.save();
+        //use flash to display success message after creating a new listing, we can use flash to display success message after creating a new listing, we can set the flash message in the create route and then display it in the index route, so that when the user creates a new listing, they will see a success message on the index page, we can also use flash to display error messages if there is any error while creating a new listing, for example if there is a validation error, we can set the flash message in the validateListing middleware and then display it in the index route, so that when the user tries to create a new listing with invalid data, they will see an error message on the index page.
+        req.flash('success', 'Listing created successfully!');
         res.redirect('/listings');    
 }));
 //update route
