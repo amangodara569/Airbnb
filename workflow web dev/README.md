@@ -1,7 +1,7 @@
 # 📖 WORKFLOW WEB DEV — Your MERN Learning Reference
 > Personal reference notes for full-stack web development
 > Based on YOUR Wanderlust (Airbnb Clone) project
-> **Current Level:** Full CRUD + Validation + Error Handling + Reviews Feature (Create/Delete/Populate) + Express Router (routes split) + Sessions/Cookies/Flash Messages ✅
+> **Current Level:** Full CRUD + Validation + Error Handling + Reviews Feature (Create/Delete/Populate) + Express Router (routes split) + Sessions/Cookies/Flash Messages + Authentication (Passport.js) + Authorization (isLoggedIn/isOwner) ✅
 
 ---
 
@@ -20,6 +20,9 @@
 | 09 | [09_reviews.md](./09_reviews.md) | **Reviews Feature** — Full deep dive into Reviews: model, routes, templates, populate(), Joi validation, cascade delete. |
 | 10 | [10_sessions_cookies.md](./10_sessions_cookies.md) | **Sessions & Cookies** — Theory, cookie-parser, signed cookies, express-session, connect-mongo, connect-flash, flash messages, security best practices. |
 | 11 | [11_project_mental_map.md](./11_project_mental_map.md) | **Project Mental Map** — How a senior dev thinks, design resources, AI tools, fastest path for any project type, universal folder structure. |
+| 12 | [12_web_dev_basics.md](./12_web_dev_basics.md) | **Web Dev Basics** — Core concepts every professional developer should know. |
+| 13 | [13_authentication.md](./13_authentication.md) | **Authentication** — Full Passport.js setup: User model, signup/login/logout routes, session integration, serializeUser/deserializeUser explained. |
+| 14 | [14_authorization.md](./14_authorization.md) | **Authorization** — isLoggedIn + isOwner middleware, protecting routes, owner field on models, hiding buttons in views, redirect after login. |
 
 ---
 
@@ -55,15 +58,25 @@
 - [x] Flash messages displayed in views (includes/flash.ejs)
 - [x] Flash on create listing, delete listing, create review, delete review routes
 
+### ✅ What you've ALSO COMPLETED:
+- [x] Authentication with Passport.js (signup/login/logout)
+- [x] User model with passport-local-mongoose (auto password hashing)
+- [x] `route/auth.js` — Signup, Login, Logout routes
+- [x] `views/auth/signup.ejs` and `views/auth/login.ejs`
+- [x] Passport configured in app.js (initialize, session, strategy, serialize)
+- [x] `currentUser` available in all templates via `res.locals`
+- [x] Navbar updated: shows login/signup OR username/logout based on auth state
+- [x] `isLoggedIn` middleware — protects routes that require auth
+- [x] `isOwner` middleware — restricts edit/delete to listing owners
+- [x] `isReviewAuthor` middleware — restricts review delete to review authors
+- [x] `owner` field added to Listing model
+- [x] `author` field added to Review model
+- [x] `saveRedirectUrl` middleware — redirects user back after login
+- [x] Edit/Delete buttons hidden in views if not the owner
+
 ### 🔜 What's NEXT:
-- [ ] Mongoose post middleware — cascade delete reviews when listing is deleted
-- [ ] Authentication (Passport.js — login/signup/logout)
-- [ ] User model with passport-local-mongoose
-- [ ] Sessions (express-session + connect-mongo)
-- [ ] Flash messages (connect-flash)
-- [ ] Authorization (isLoggedIn, isOwner middlewares)
 - [ ] Image upload (Multer + Cloudinary)
-- [ ] Maps (Mapbox)
+- [ ] Maps (Mapbox + geocoding)
 - [ ] Deployment (Render + MongoDB Atlas)
 
 ---
