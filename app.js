@@ -27,6 +27,7 @@ const sessionOptions = {
 app.use(session(sessionOptions));
 //using flash after session, because flash uses session to store the messages, so we have to use session before flash
 app.use(flash());
+
 //middleware for flash
 app.use((req, res, next)=>{
     res.locals.success = req.flash('success'); //this will make the success message available in all the templates, so that we can display it in the index page after creating a new listing, we can also use it to display error messages if there is any error while creating a new listing, for example if there is a validation error, we can set the flash message in the validateListing middleware and then display it in the index route, so that when the user tries to create a new listing with invalid data, they will see an error message on the index page.

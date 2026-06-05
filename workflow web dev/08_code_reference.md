@@ -5,22 +5,25 @@
 ---
 
 ## 📋 TABLE OF CONTENTS
-1. [app.js — Main Server File](#appjs--main-server-file)
-2. [models/listing.js — Mongoose Model](#modelslistingjs--mongoose-model)
-3. [models/review.js — Review Model](#modelsreviewjs--review-model)
-4. [schema.js — Joi Validation](#schemajs--joi-validation)
-5. [utils/expressError.js — Custom Error](#utilsexpresserrorjs--custom-error)
-6. [utils/wrapAsync.js — Async Wrapper](#utilswrapasyncjs--async-wrapper)
-7. [init/init.js — Database Seeder](#initinitjs--database-seeder)
-8. [views/layouts/boilerplate.ejs](#viewslayoutsboilerplateejs)
-9. [views/includes/navbar.ejs](#viewsincludesnavbarejs)
-10. [views/includes/footer.ejs](#viewsincludesfooterejs)
-11. [views/listings/ — All Templates](#viewslistings--all-templates)
-12. [public/js/script.js — Client Validation](#publicjsscriptjs--client-validation)
+1. [app.js — Main Server File](#appjs--main-server-file-clean-version-with-routers)
+2. [route/listing.js — Listing Routes](#routelistingjs--listing-routes)
+3. [route/review.js — Review Routes](#routereviewjs--review-routes)
+4. [models/listing.js — Mongoose Model](#modelslistingjs--mongoose-model)
+5. [models/review.js — Review Model](#modelsreviewjs--review-model)
+6. [schema.js — Joi Validation](#schemajs--joi-validation)
+7. [utils/expressError.js — Custom Error](#utilsexpresserrorjs--custom-error)
+8. [utils/wrapAsync.js — Async Wrapper](#utilswrapasyncjs--async-wrapper)
+9. [init/init.js — Database Seeder](#initinitjs--database-seeder)
+10. [views/layouts/boilerplate.ejs](#viewslayoutsboilerplateejs)
+11. [views/includes/navbar.ejs](#viewsincludesnavbarejs)
+12. [views/includes/flash.ejs](#viewsincludesflashejs)
+13. [views/includes/footer.ejs](#viewsincludesfooterejs)
+14. [views/listings/ — All Templates](#viewslistings--all-templates)
+15. [public/js/script.js — Client Validation](#publicjsscriptjs--client-validation)
 
 ---
 
-## APP.JS — MAIN SERVER FILE
+## APP.JS — MAIN SERVER FILE (CLEAN VERSION WITH ROUTERS)
 
 ```js
 // ============================================================
@@ -29,45 +32,53 @@
 const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
-const Listing = require('./models/listing');
-const Review = require('./models/review.js');     // ← For reviews
 const path = require('path');
 const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
-const wrapAsync = require('./utils/wrapAsync');
 const expressError = require('./utils/expressError');
-const { listingSchema, reviewSchema } = require('./schema.js');  // ← Both schemas
 
-// ============================================================
-//                   VALIDATION MIDDLEWARES
-// ============================================================
-const validateListing = (req, res, next) => {
-    let {error} = listingSchema.validate(req.body);
-    if (error) {
-        let errMsg = error.details.map((el) => el.message).join(",");
-        throw new expressError(400, errMsg);
-    } else {
-        next();
-    }
-}
+// ← Sessions & Flash packages
+const session = require('express-session');
+const flash = require('connect-flash');
+const cookieParser = require('cookie-parser');
 
-const validateReview = (req, res, next) => {
-    let {error} = reviewSchema.validate(req.body);
-    if (error) {
-        let errMsg = error.details.map((el) => el.message).join(",");
-        throw new expressError(400, errMsg);
-    } else {
-        next();
-    }
-}
+// ← Require router files (routes moved out of app.js)
+const listings = require('./route/listing.js');
+const reviews = require('./route/review.js');
 
 // ============================================================
 //                    MIDDLEWARE SETUP
 // ============================================================
 app.engine('ejs', ejsMate);
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ← SESSIONS & FLASH SETUP
+const sessionOptions = {
+    secret: 'mysecretkey',
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        expires: Date.now() + 1000 * 60 * 60 * 24,  // 24 hours
+        maxAge: 1000 * 60 * 60 * 24,                 // 24 hours  
+        httpOnly: true                               // Secure: no client-side JS access
+    }
+};
+
+app.use(session(sessionOptions));
+app.use(flash());
+
+// ← Make flash messages available in all templates (as res.locals)
+app.use((req, res, next) => {
+    res.locals.success = req.flash('success');
+    res.locals.error = req.flash('error');
+    next();
+});
+
+// ============================================================
+//                   VIEW ENGINE SETUP
+// ============================================================
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views/'));
 
@@ -91,91 +102,20 @@ app.listen(3000, () => {
 });
 
 // ============================================================
-//                        ROUTES
+//                      MOUNT ROUTERS
 // ============================================================
+// All listing routes (INDEX, NEW, CREATE, EDIT, UPDATE, DELETE, SHOW)
+app.use('/listings', listings);
 
-// ROOT
+// All review routes (CREATE, DELETE) 
+app.use('/listings/:id/reviews', reviews);
+
+// ============================================================
+//                        ROOT ROUTE
+// ============================================================
 app.get('/', (req, res) => {
-    res.send("working fine");
+    res.send('working fine');
 });
-
-// INDEX — Show all listings
-app.get('/listings', wrapAsync(async (req, res) => {
-    const alllistings = await Listing.find({});
-    res.render('listings/index.ejs', {listings: alllistings});
-}));
-
-// NEW — Show create form
-app.get('/listings/new', (req, res) => {
-    res.render('listings/new.ejs');
-});
-
-// CREATE — Save new listing
-app.post('/listings', validateListing, wrapAsync(async (req, res, next) => {
-    let {title, description, price, city, country} = req.body;
-    const newListing = new Listing({
-        title: title,
-        description: description,
-        price: price,
-        location: city,
-        country: country,
-    });
-    await newListing.save();
-    res.redirect('/listings');
-}));
-
-// EDIT — Show edit form
-app.get('/listings/:id/edit', wrapAsync(async (req, res) => {
-    const {id} = req.params;
-    const listing = await Listing.findById(id);
-    res.render('listings/edit.ejs', {listing});
-}));
-
-// UPDATE — Save changes
-app.put('/listings/:id', validateListing, wrapAsync(async (req, res) => {
-    const {id} = req.params;
-    let {title, description, price, city, country} = req.body;
-    await Listing.findByIdAndUpdate(id, {
-        title: title,
-        description: description,
-        price: price,
-        location: city,
-        country: country,
-    });
-    res.redirect(`/listings/${id}`);
-}));
-
-// DELETE
-app.delete('/listings/:id', wrapAsync(async (req, res) => {
-    const {id} = req.params;
-    await Listing.findByIdAndDelete(id);
-    res.redirect('/listings');
-}));
-
-// SHOW — Must be at the end among :id routes!
-app.get('/listings/:id' , wrapAsync(async (req, res) => {
-    const {id} = req.params;
-    // populate('reviews') fills in the actual review documents (not just IDs)
-    const listing = await Listing.findById(id).populate('reviews');
-    res.render('listings/show.ejs', {listing});
-}));
-
-// ============================================================
-//                   REVIEW ROUTES
-// ============================================================
-
-// CREATE REVIEW
-app.post('/listings/:id/reviews', validateReview, wrapAsync(async (req, res) => {
-    let listing = await Listing.findById(req.params.id);
-    const review = new Review({
-        rating: req.body.rating,
-        comment: req.body.comment,
-    });
-    listing.reviews.push(review);  // Adds review._id to listing.reviews array
-    await review.save();
-    await listing.save();
-    res.redirect(`/listings/${listing._id}`);
-}));
 
 // ============================================================
 //                   404 CATCH-ALL ROUTE
@@ -188,17 +128,175 @@ app.all(/(.*)/, (req, res, next) => {
 //                  ERROR HANDLING MIDDLEWARE
 // ============================================================
 app.use((err, req, res, next) => {
-    let {statusCode = 500, message = "something went wrong"} = err;
-    res.render("listings/error.ejs", {message, statusCode});
+    let { statusCode = 500, message = "something went wrong" } = err;
+    res.render("listings/error.ejs", { message, statusCode });
 });
 ```
 
 ---
 
+## ROUTE/LISTING.JS — LISTING ROUTES
+
+```js
+const express = require('express');
+const router = express.Router();
+const wrapAsync = require('../utils/wrapAsync');
+const expressError = require('../utils/expressError');
+const { listingSchema } = require('../schema.js');
+const Listing = require('../models/listing');
+
+// ============================================================
+//                   VALIDATION MIDDLEWARE
+// ============================================================
+const validateListing = (req, res, next) => {
+    let { error } = listingSchema.validate(req.body);
+    if (error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new expressError(400, errMsg);
+    } else {
+        next();
+    }
+}
+
+// ============================================================
+//                    LISTING ROUTES
+// ============================================================
+
+// 1. INDEX — Show all listings
+router.get('/', wrapAsync(async (req, res) => {
+    const alllistings = await Listing.find({});
+    res.render('listings/index.ejs', { listings: alllistings });
+}));
+
+// 2. NEW — Show create form (MUST be before :id routes!)
+router.get('/new', (req, res) => {
+    res.render('listings/new.ejs');
+});
+
+// 3. CREATE — Save new listing
+router.post('/', validateListing, wrapAsync(async (req, res, next) => {
+    let { title, description, price, city, country } = req.body;
+    const newListing = new Listing({
+        title: title,
+        description: description,
+        price: price,
+        location: city,
+        country: country,
+    });
+    await newListing.save();
+    req.flash('success', 'Listing created successfully!');  // ← Flash message
+    res.redirect('/listings');
+}));
+
+// 4. EDIT — Show edit form
+router.get('/:id/edit', wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const listing = await Listing.findById(id);
+    res.render('listings/edit.ejs', { listing });
+}));
+
+// 5. UPDATE — Save changes
+router.put('/:id', validateListing, wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    let { title, description, price, city, country } = req.body;
+    await Listing.findByIdAndUpdate(id, {
+        title: title,
+        description: description,
+        price: price,
+        location: city,
+        country: country,
+    });
+    req.flash('success', 'Listing updated successfully!');  // ← Flash message
+    res.redirect(`/listings/${id}`);
+}));
+
+// 6. DELETE — Delete listing (cascade delete reviews via post middleware)
+router.delete('/:id', wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    await Listing.findByIdAndDelete(id);
+    req.flash('success', 'Listing deleted successfully!');  // ← Flash message
+    res.redirect('/listings');
+}));
+
+// 7. SHOW — Show single listing (MUST be at the end!)
+router.get('/:id', wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const listing = await Listing.findById(id).populate('reviews');
+    if (!listing) {
+        req.flash('error', 'Listing not found!');
+        return res.redirect('/listings');
+    }
+    res.render('listings/show.ejs', { listing });
+}));
+
+module.exports = router;
+```
+
+---
+
+## ROUTE/REVIEW.JS — REVIEW ROUTES
+
+```js
+const express = require('express');
+const router = express.Router({ mergeParams: true });  // ← mergeParams to access parent :id
+const wrapAsync = require('../utils/wrapAsync');
+const expressError = require('../utils/expressError');
+const { reviewSchema } = require('../schema.js');
+const Listing = require('../models/listing');
+const Review = require('../models/review.js');
+
+// ============================================================
+//                   VALIDATION MIDDLEWARE
+// ============================================================
+const validateReview = (req, res, next) => {
+    let { error } = reviewSchema.validate(req.body);
+    if (error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new expressError(400, errMsg);
+    } else {
+        next();
+    }
+};
+
+// ============================================================
+//                    REVIEW ROUTES
+// ============================================================
+
+// CREATE REVIEW
+router.post('/:id/reviews', validateReview, wrapAsync(async (req, res) => {
+    let listing = await Listing.findById(req.params.id);
+    const { rating, comment } = req.body.review;
+    const review = new Review({
+        rating,
+        comment,
+    });
+    listing.reviews.push(review);  // Add review ID to listing's reviews array
+    await review.save();
+    await listing.save();
+    req.flash('success', 'Review created successfully!');
+    res.redirect(`/listings/${listing._id}`);
+}));
+
+// DELETE REVIEW  
+router.delete('/:id/reviews/:reviewId', wrapAsync(async (req, res) => {
+    const { id, reviewId } = req.params;
+    await Listing.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });  // Remove from array
+    await Review.findByIdAndDelete(reviewId);  // Delete the review document
+    req.flash('success', 'Review deleted successfully!');
+    res.redirect(`/listings/${id}`);
+}));
+
+module.exports = router;
+```
+
+---
+
+
 ## MODELS/LISTING.JS — MONGOOSE MODEL
 
 ```js
 const mongoose = require('mongoose');
+const Review = require('./review.js');
 
 const listingSchema = new mongoose.Schema({
     title: {
@@ -230,9 +328,28 @@ const listingSchema = new mongoose.Schema({
     ]
 });
 
+// ← MONGOOSE MIDDLEWARE: Cascade delete reviews when a listing is deleted
+// This runs AFTER a listing is deleted using findOneAndDelete()
+listingSchema.post('findOneAndDelete', async function(doc) {
+    if (doc) {
+        // Delete all reviews whose _id is in the doc.reviews array
+        await Review.deleteMany({
+            _id: {
+                $in: doc.reviews,  // $in: delete all reviews in this array
+            }
+        });
+    }
+});
+
 const Listing = mongoose.model('Listing', listingSchema);
 module.exports = Listing;
 ```
+
+**Why the post middleware?**
+- When you delete a listing, its reviews are still in the database (orphaned)
+- This middleware automatically cleans them up
+- `$in` operator: "match all documents whose _id is IN this array"
+- `doc.reviews` is the array of review IDs stored in the listing
 
 ---
 
@@ -372,6 +489,10 @@ initdb()
 </head>
 <body style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%); min-height: 100vh;">
     <%- include("../includes/navbar.ejs") %>
+    
+    <!-- ← Flash messages for success/error alerts -->
+    <%- include("../includes/flash.ejs") %>
+    
     <div class="container-fluid" style="padding: 0; margin: 0;">
         <%- body %>
     </div>
@@ -412,6 +533,37 @@ initdb()
     </div>
 </nav>
 ```
+
+---
+
+## VIEWS/INCLUDES/FLASH.EJS
+
+```html
+<!-- Flash messages for success (green) and error (red) alerts -->
+<!-- These messages come from res.locals.success and res.locals.error (set in app.js middleware) -->
+<!-- Flash messages are one-time only — they disappear after the next request -->
+
+<% if(res.locals.success) { %>
+    <div class="alert alert-success alert-dismissible fade show col-6 offset-3" role="alert">
+        <%= res.locals.success %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<% } %>
+
+<% if(res.locals.error) { %>
+    <div class="alert alert-danger alert-dismissible fade show col-6 offset-3" role="alert">
+        <%= res.locals.error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<% } %>
+```
+
+**How flash messages work:**
+1. In your routes, after an action: `req.flash('success', 'Listing created!')`
+2. The message is stored in `req.session`
+3. Express middleware (in app.js) exposes it as `res.locals.success`
+4. This template displays it in a Bootstrap alert
+5. After the page renders, the message is deleted (one-time use)
 
 ---
 

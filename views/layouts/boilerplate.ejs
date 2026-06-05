@@ -14,6 +14,10 @@
      <!-- includeing navbar -->
     <%- include("../includes/navbar.ejs") %>
      <div class="container-fluid" style="padding: 0; margin: 0;">
+        <!-- include flash messages -->
+        <%- include("../includes/flash.ejs") %>
+         <!-- this is where the content of the other templates will be rendered, like index.ejs, show.ejs, etc. -->
+         <!-- we will be using ejs layout to render the content of the other templates in this boilerplate template, so that we don't have to repeat the same code in every template, we can just include this boilerplate template in our other templates and then write the content of the other templates in the body section of this boilerplate template, so that it will be rendered in this boilerplate template and we can use the same navbar and footer for all the templates. -->
         <%- body %>
      </div>
 

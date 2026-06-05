@@ -8,7 +8,7 @@ const expressError = require('../utils/expressError');
 const { listingSchema } = require('../schema.js');
 const Listing = require('../models/listing');
 
-
+//after adding flash , create a ejs template for that and add in boilerplate in respected position where we want to show it
 
 
 //db schema validation, created it into a middleware this can be used as parameter in async routes
@@ -56,6 +56,11 @@ router.post('/', validateListing, wrapAsync(async (req, res, next)=>{
 router.get('/:id/edit', wrapAsync(async (req, res)=>{
     const {id} = req.params;
     const listing = await Listing.findById(id);
+    //if this lisitn doesnt exist
+    if(!listing){
+        req.flash('error', 'Listing not found!');
+        return res.redirect('/listings');
+    }
     res.render('listings/edit.ejs', {listing});
 }));
 
@@ -82,6 +87,8 @@ router.put('/:id', validateListing, wrapAsync(async (req, res)=>{
 router.delete('/:id', wrapAsync(async (req, res)=>{
     const {id} = req.params;
     await Listing.findByIdAndDelete(id);
+    //flash message
+    req.flash('success', 'Listing deleted successfully!');
     res.redirect('/listings');
 }));
 
@@ -90,6 +97,10 @@ router.delete('/:id', wrapAsync(async (req, res)=>{
 router.get('/:id' , wrapAsync(async (req, res)=>{
     const {id} = req.params;
     const listing = await Listing.findById(id).populate('reviews'); //populate is used to get the review data from the review collection, because in listing schema we have defined reviews as an array of object ids, so we need to populate it to get the actual review data, otherwise we will get only the object ids of the reviews, and we wont be able to show the review data on the show page of the listing, so we need to populate it to get the actual review data, and then we can show it on the show page of the listing.
+    if(!listing){
+        req.flash('error', 'Listing not found!');
+        return res.redirect('/listings');
+    }
     res.render('listings/show.ejs', {listing});
 }));//should be at the end of the routes, otherwise it will be treated as a dynamic route and will override the new route.
 

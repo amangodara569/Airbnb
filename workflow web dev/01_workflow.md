@@ -16,7 +16,8 @@
 9. [Phase 9 - Reviews Feature](#phase-9---reviews-feature-completed)
 10. [Phase 10 - Delete Reviews](#phase-10---delete-reviews-completed)
 11. [Phase 11 - Express Router](#phase-11---express-router-completed)
-12. [What Comes Next (Not done yet)](#whats-next---future-phases)
+12. [Phase 12 - Sessions, Cookies & Flash Messages](#phase-12---sessions-cookies--flash-messages-completed)
+13. [What Comes Next](#whats-next---future-phases)
 
 ---
 
@@ -647,21 +648,95 @@ app.use((err, req, res, next) => {
 
 ---
 
+## PHASE 12 - SESSIONS, COOKIES & FLASH MESSAGES ✅ COMPLETED
+
+> Full details in `10_sessions_cookies.md`
+
+### What was added:
+- `express-session` for session management
+- `cookie-parser` for cookie handling
+- `connect-flash` for one-time flash messages
+- Session configuration with secure cookie options
+- Flash middleware to expose messages in templates (`res.locals`)
+- Flash messages integrated into all CRUD routes (create, update, delete)
+- Flash message template (`includes/flash.ejs`) added to boilerplate
+
+### Your current session setup (in app.js):
+```js
+const session = require('express-session');
+const flash = require('connect-flash');
+const cookieParser = require('cookie-parser');
+
+// Session configuration
+const sessionOptions = {
+    secret: 'mysecretkey',
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        expires: Date.now() + 1000 * 60 * 60 * 24,  // 24 hours
+        maxAge: 1000 * 60 * 60 * 24,                 // 24 hours
+        httpOnly: true  // Prevents client-side JS access (security)
+    }
+};
+
+app.use(session(sessionOptions));
+app.use(flash());
+
+// Make flash messages available in all templates
+app.use((req, res, next) => {
+    res.locals.success = req.flash('success');
+    res.locals.error = req.flash('error');
+    next();
+});
+```
+
+### Using flash in your routes:
+```js
+// After creating a listing
+req.flash('success', 'Listing created successfully!');
+res.redirect('/listings');
+
+// After deleting a listing
+req.flash('success', 'Listing deleted successfully!');
+res.redirect('/listings');
+
+// After creating a review
+req.flash('success', 'Review created successfully!');
+res.redirect(`/listings/${listing._id}`);
+
+// After deleting a review
+req.flash('success', 'Review deleted successfully!');
+res.redirect(`/listings/${id}`);
+```
+
+### Displaying flash messages in templates (includes/flash.ejs):
+```html
+<% if(res.locals.success) { %>
+    <div class="alert alert-success alert-dismissible fade show col-6 offset-3" role="alert">
+        <%= res.locals.success %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<% } %>
+
+<% if(res.locals.error) { %>
+    <div class="alert alert-danger alert-dismissible fade show col-6 offset-3" role="alert">
+        <%= res.locals.error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<% } %>
+```
+
+---
+
 ## WHAT'S NEXT - FUTURE PHASES
 
 These are the things you'll be adding to your project next:
 
-### Phase 12: Authentication (Login/Signup)
+### Phase 13: Authentication (Login/Signup)
 - Install: `passport`, `passport-local`, `passport-local-mongoose`
 - User model with automatic password hashing
 - Login, Signup, Logout routes (`route/auth.js`)
-- See `10_sessions_cookies.md` for the session setup needed
-
-### Phase 13: Sessions + Flash Messages
-- `express-session` + `connect-mongo` (store sessions in MongoDB)
-- `connect-flash` for one-time success/error messages
-- `res.locals` middleware to make messages available in all templates
-- See `10_sessions_cookies.md` for full code
+- Use sessions from Phase 12 to keep users logged in
 
 ### Phase 14: Authorization
 - `isLoggedIn` middleware — redirect to login if not authenticated

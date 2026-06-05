@@ -1,7 +1,7 @@
 # 📖 WORKFLOW WEB DEV — Your MERN Learning Reference
 > Personal reference notes for full-stack web development
 > Based on YOUR Wanderlust (Airbnb Clone) project
-> **Current Level:** CRUD + Validation + Error Handling + Reviews + Express Router + Delete Reviews ✅
+> **Current Level:** Full CRUD + Validation + Error Handling + Reviews Feature (Create/Delete/Populate) + Express Router (routes split) + Sessions/Cookies/Flash Messages ✅
 
 ---
 
@@ -28,14 +28,14 @@
 ### ✅ What you've COMPLETED:
 - [x] Project setup (Express, Mongoose, EJS)
 - [x] MongoDB connection & Listing model
-- [x] All 7 RESTful CRUD routes
+- [x] All 7 RESTful CRUD routes (Index, New, Create, Show, Edit, Update, Delete)
 - [x] EJS templates with ejs-mate layouts
 - [x] Navbar & Footer partials
 - [x] Glassmorphism dark theme design
 - [x] Database seeding (30 sample listings)
 - [x] Custom error class (expressError)
 - [x] Async error wrapper (wrapAsync)
-- [x] Error handling middleware
+- [x] Error handling middleware (4-param error handler)
 - [x] 404 catch-all route
 - [x] Client-side validation (Bootstrap)
 - [x] Server-side validation (Joi) — for Listings & Reviews
@@ -44,10 +44,16 @@
 - [x] Reviews added to Listing model (array of ObjectIds)
 - [x] POST /listings/:id/reviews — Create review route
 - [x] DELETE /listings/:id/reviews/:reviewId — Delete review route
+- [x] Cascade delete (post middleware) — Auto-delete reviews when listing deleted
 - [x] populate('reviews') — Show reviews on listing page
-- [x] Reviews displayed on show.ejs page
+- [x] Reviews displayed on show.ejs page with ratings, comments, timestamps
 - [x] Express Router — routes split into `route/listing.js` + `route/review.js`
+- [x] Router mounting with mergeParams for nested routes
 - [x] `$pull` operator to remove review from listing array
+- [x] express-session configured with cookie options
+- [x] connect-flash for flash messages (success & error)
+- [x] Flash messages displayed in views (includes/flash.ejs)
+- [x] Flash on create listing, delete listing, create review, delete review routes
 
 ### 🔜 What's NEXT:
 - [ ] Mongoose post middleware — cascade delete reviews when listing is deleted
