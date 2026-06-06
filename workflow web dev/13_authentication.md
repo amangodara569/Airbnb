@@ -74,6 +74,9 @@ Authorization = What are you allowed to do?
 ---
 
 ## HOW PASSPORT.JS WORKS
+install - npm i passport
+            npm i passport-local
+            npm i passport-local-mongoose
 
 Passport.js is the industry-standard auth library for Express. It handles:
 - Verifying username/password

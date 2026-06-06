@@ -11,6 +11,10 @@ const flash = require('connect-flash');
 const listings = require("./route/listing.js")
 const reviews = require("./route/review.js")
 const flash = requrire("connect-flash");
+//for authentication
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+const User = require('./models/user.js');
 
 
 //cookies and sessions
@@ -27,6 +31,14 @@ const sessionOptions = {
 app.use(session(sessionOptions));
 //using flash after session, because flash uses session to store the messages, so we have to use session before flash
 app.use(flash());
+
+//authentication setup
+//session should be implemented before passport session, because passport session uses the session to store the user data, so we have to implement session before passport session
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate())); //this is a method provided by passport-local-mongoose to authenticate the user using the username and password, it will return a function that takes the username and password and checks if they are correct, if they are correct, it will return the user object, otherwise it will return false.
+passport.serializeUser(User.serializeUser()); //this is a method provided by passport-local-mongoose to serialize the user, it will take the user object and serialize it into a string that can be stored in the session, it will return the id of the user.
+passport.deserializeUser(User.deserializeUser()); //this is a method provided by passport-local-mongoose to deserialize the user, it will take the id of the user from the session and deserialize it into a user object, it will return the user object.
 
 //middleware for flash
 app.use((req, res, next)=>{
