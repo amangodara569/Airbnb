@@ -1,0 +1,77 @@
+<% layout("/layouts/boilerplate") %>
+<!-- 
+  SCHEMA VALIDATION IN SIGNUP FORM - How It Works:
+  ================================================
+  
+  YES, schema validation WILL work, but it happens on the BACKEND (server-side), not in the form.
+  
+  FLOW:
+  1. User fills out this form (client-side)
+  2. Form has HTML5 validation (required attributes) - catches empty fields BEFORE sending
+  3. Form data is sent via POST to /signup route (backend)
+  4. Backend receives the data (username, email, password)
+  5. Backend creates a new User document: new User({ username, email, password })
+  6. MONGOOSE SCHEMA VALIDATION runs here - validates against User schema rules
+  7. If validation passes → document saved to MongoDB
+  8. If validation fails → error thrown, shown to user
+  
+  IMPLEMENTATION:
+  - Define validation rules in User.js (Mongoose schema)
+  - Example: { username: { type: String, required: true, minlength: 3 } }
+  - When user.save() is called, Mongoose automatically validates
+  - Errors are caught in the /signup route handler
+-->
+
+<h1>Sign Up</h1>
+<form action="/signup" method="POST">
+    <!-- 
+      HTML5 VALIDATION (client-side):
+      - 'required' attribute: browser prevents empty submission
+      - 'type="email"': browser checks basic email format
+      - These are UX improvements, but NOT security
+    -->
+    <div>
+        <label for="username">Username:</label>
+        <!-- Client-side validation: ensures field is not empty -->
+        <input type="text" id="username" name="username" required>
+    </div>
+    <div>
+        <label for="email">Email:</label>
+        <!-- Client-side validation: browser checks basic email format -->
+        <input type="email" id="email" name="email" required>
+    </div>
+    <div>
+        <label for="password">Password:</label>
+        <!-- Client-side validation: ensures field is not empty -->
+        <input type="password" id="password" name="password" required>
+    </div>
+    <button type="submit">Sign Up</button>
+</form>
+
+<!-- 
+  IMPORTANT NOTES:
+  ===============
+  1. Form HTML5 validation is NOT secure (users can bypass it)
+  2. REAL validation happens on backend using Mongoose schema
+  3. Backend route handler should:
+     - Receive form data
+     - Create new User document
+     - Call user.save() - Mongoose validates here
+     - Catch validation errors and show them
+  
+  4. Mongoose validation errors should be displayed back to user
+     (e.g., "Username must be at least 3 characters")
+  
+  Example route handler pseudo-code:
+  router.post('/signup', async (req, res) => {
+    try {
+      const { username, email, password } = req.body;
+      const user = new User({ username, email, password });
+      await user.save(); // ← Schema validation happens here
+      // Success - redirect or show success message
+    } catch (error) {
+      // Validation failed - show error messages to user
+      res.render('users/signup', { error: error.message });
+    }
+  });
+-->

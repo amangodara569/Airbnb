@@ -15,7 +15,7 @@ const flash = requrire("connect-flash");
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const User = require('./models/user.js');
-
+const userRoutes = require('./route/user.js');
 
 //cookies and sessions
 const sessionOptions = {
@@ -40,6 +40,16 @@ passport.use(new LocalStrategy(User.authenticate())); //this is a method provide
 passport.serializeUser(User.serializeUser()); //this is a method provided by passport-local-mongoose to serialize the user, it will take the user object and serialize it into a string that can be stored in the session, it will return the id of the user.
 passport.deserializeUser(User.deserializeUser()); //this is a method provided by passport-local-mongoose to deserialize the user, it will take the id of the user from the session and deserialize it into a user object, it will return the user object.
 
+// app.get('/fakeUser', async (req, res)=>{
+//     const user = new User({username: "testuser", email: "testuser@example.com"});//can provide username and email, but password will be provided by passport-local-mongoose
+//     const registeredUser = await User.register(user, "password123");//this is a method provided by passport-local-mongoose to register a new user, it will take the user object and the password, it will hash the password and store it in the database, it will return the registered user object.
+//     res.send(registeredUser);
+// });
+//GET signup ->signup form -> POST signup -> create new user in database -> redirect to login page
+
+
+
+
 //middleware for flash
 app.use((req, res, next)=>{
     res.locals.success = req.flash('success'); //this will make the success message available in all the templates, so that we can display it in the index page after creating a new listing, we can also use it to display error messages if there is any error while creating a new listing, for example if there is a validation error, we can set the flash message in the validateListing middleware and then display it in the index route, so that when the user tries to create a new listing with invalid data, they will see an error message on the index page.
@@ -62,6 +72,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 //using the router files
 app.use("/listings", listings); //this means that all the routes defined in the listing router file will be prefixed with /listings, so we don't have to write /listings in every route in the listing router file, we can just write / in the listing router file and it will be treated as /listings in the app.js file, this is called mounting the router, and it helps us to keep our code organized and also avoid repetition of code.
 app.use("/listings/:id/reviews", reviews);
+app.use("/", userRoutes); //login routes will be defined in userRoutes file, and they will be prefixed with /, so we don't have to write / in every route in the userRoutes file, we can just write / in the userRoutes file and it will be treated as / in the app.js file, this is called mounting the router, and it helps us to keep our code organized and also avoid repetition of code.
 
 
 

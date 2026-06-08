@@ -23,6 +23,7 @@
 | 12 | [12_web_dev_basics.md](./12_web_dev_basics.md) | **Web Dev Basics** — Core concepts every professional developer should know. |
 | 13 | [13_authentication.md](./13_authentication.md) | **Authentication** — Full Passport.js setup: User model, signup/login/logout routes, session integration, serializeUser/deserializeUser explained. |
 | 14 | [14_authorization.md](./14_authorization.md) | **Authorization** — isLoggedIn + isOwner middleware, protecting routes, owner field on models, hiding buttons in views, redirect after login. |
+| 15 | [15_validation.md](./15_validation.md) | **Validation (All Types)** — Complete guide: HTML5 client-side, Mongoose schema, Joi request-level, custom validation. 3-layer validation system, error handling, edge cases, common mistakes. |
 
 ---
 
