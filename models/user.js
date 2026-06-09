@@ -14,6 +14,7 @@ const UserSchema = new Schema({
     },
 });
 
-User.plugin(passportLocalMongoose);//it will automatically do hashing , salting, and add username and password fields to the schema, and also add some methods for authentication
+UserSchema.plugin(passportLocalMongoose.default);//it will automatically do hashing , salting, and add username and password fields to the schema, and also add some methods for authentication
 
-module.exports = mongoose.model('User', UserSchema);
+const User = mongoose.model('User', UserSchema);
+module.exports = User;

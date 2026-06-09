@@ -10,7 +10,6 @@ const flash = require('connect-flash');
 //requireing router files
 const listings = require("./route/listing.js")
 const reviews = require("./route/review.js")
-const flash = requrire("connect-flash");
 //for authentication
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
@@ -54,6 +53,7 @@ passport.deserializeUser(User.deserializeUser()); //this is a method provided by
 app.use((req, res, next)=>{
     res.locals.success = req.flash('success'); //this will make the success message available in all the templates, so that we can display it in the index page after creating a new listing, we can also use it to display error messages if there is any error while creating a new listing, for example if there is a validation error, we can set the flash message in the validateListing middleware and then display it in the index route, so that when the user tries to create a new listing with invalid data, they will see an error message on the index page.
     res.locals.error = req.flash('error');
+    res.locals.currentUser = req.user; //this will make the currentUser available in all the templates, so that we can check if the user is logged in or not and display the appropriate links in the navbar
     next();
 });//now we need to add this in ejs template to display
 
@@ -91,7 +91,7 @@ app.listen(3000, ()=>{
       console.log('server is up and running');
 });
 app.get('/', (req, res)=>{
-    res.send("working fine");
+    res.redirect("/listings");
 });
 // app.get('/testListing',async (req, res)=>{
 //     const listing = new Listing({

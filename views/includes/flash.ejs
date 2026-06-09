@@ -1,14 +1,14 @@
 <!-- include it in boilerplate -->
  <!-- if true then only flash message -->
-<% if(res.locals.success) { %>
+<% if(success && success.length > 0) { %>
     <div class="alert alert-success alert-dismissible fade show col-6 offset-3" role="alert">
-        <%= res.locals.success %>
+        <%= success %>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <% } %>
-<% if(res.locals.error) { %>
+<% if(error && error.length > 0) { %>
     <div class="alert alert-danger alert-dismissible fade show col-6 offset-3" role="alert">
-        <%= res.locals.error %>
+        <%= error %>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <% } %>

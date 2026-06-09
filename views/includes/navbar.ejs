@@ -9,7 +9,13 @@
       <a class="nav-item nav-link" href="/" style="color: rgba(255, 255, 255, 0.8); transition: 0.3s;">Home <span class="sr-only">(current)</span></a>
       <a class="nav-item nav-link" href="/listings" style="color: rgba(255, 255, 255, 0.8); transition: 0.3s;">All Listings</a>
       <a class="nav-item nav-link" href="/listings/new" style="color: #FFFFFF; font-weight: 600; transition: 0.3s;">Create Listing</a>
-      
+      <% if (!currentUser) { %>
+        <a class="nav-item nav-link" href="/register" style="color: rgba(255, 255, 255, 0.8); transition: 0.3s;">Sign Up</a>
+        <a class="nav-item nav-link" href="/login" style="color: rgba(255, 255, 255, 0.8); transition: 0.3s;">Log In</a>
+      <% } else { %>
+        <span class="nav-item nav-link" style="color: rgba(255, 255, 255, 0.8);">Welcome <%= currentUser.username %></span>
+        <a class="nav-item nav-link" href="/logout" style="color: rgba(255, 255, 255, 0.8); transition: 0.3s;">Log Out</a>
+      <% } %>
     </div>
   </div>
 </nav>
