@@ -24,6 +24,7 @@
 | 13 | [13_authentication.md](./13_authentication.md) | **Authentication** — Full Passport.js setup: User model, signup/login/logout routes, session integration, serializeUser/deserializeUser explained. |
 | 14 | [14_authorization.md](./14_authorization.md) | **Authorization** — isLoggedIn + isOwner middleware, protecting routes, owner field on models, hiding buttons in views, redirect after login. |
 | 15 | [15_validation.md](./15_validation.md) | **Validation (All Types)** — Complete guide: HTML5 client-side, Mongoose schema, Joi request-level, custom validation. 3-layer validation system, error handling, edge cases, common mistakes. |
+| 16 | [16_req_object_and_packages.md](./16_req_object_and_packages.md) | **req Object & MERN Packages** — All req properties (body, params, query, session, user, flash, cookies, headers), req methods (isAuthenticated, logout, login), and 20+ most-used MERN packages with install commands and code examples. |
 
 ---
 
@@ -94,6 +95,7 @@
 8. **Need to copy code?** → Check `08_code_reference.md` for all code snippets
 9. **Cookies/Sessions?** → Check `10_sessions_cookies.md` for theory and working code
 10. **Starting a new project?** → Check `11_project_mental_map.md` for the full process
+11. **Need req object details?** → Check `16_req_object_and_packages.md` for all req properties and package reference
 
 ---
 

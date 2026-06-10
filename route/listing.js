@@ -7,6 +7,7 @@ const wrapAsync = require('../utils/wrapAsync');
 const expressError = require('../utils/expressError');
 const { listingSchema } = require('../schema.js');
 const Listing = require('../models/listing');
+const {isLoggedIn} = require('../middleware');
 
 //after adding flash , create a ejs template for that and add in boilerplate in respected position where we want to show it
 
@@ -33,7 +34,12 @@ router.get('/', wrapAsync(async (req, res)=>{
 
 //new route
 router.get('/new', (req, res)=>{
-    res.render('listings/new.ejs');
+    //to check if the user is logged in or not, if not then redirect to login page, we can use this middleware in the new route and create route, because only logged in users can create a new listing, so we can use this middleware in the new route and create route, so that if a user tries to access the new route or create route without logging in, they will be redirected to the login page, and after logging in they will be redirected back to the new route or create route, so that they can create a new listing, we can also use this middleware in the edit route and update route, because only logged in users can edit or update a listing, so we can use this middleware in the edit route and update route, so that if a user tries to access the edit route or update route without logging in, they will be redirected to the login page, and after logging in they will be redirected back to the edit route or update route, so that they can edit or update a listing.
+    if(req.isAuthenticated()){
+        return res.render('listings/new.ejs');
+    }//we can transfer this logic to a middleware function and then use that middleware function in the new route and create route, so that we can avoid code duplication and make our code cleaner and more maintainable, we can create a middleware function called isLoggedIn and then use that middleware function in the new route and create route, so that we can avoid code duplication and make our code cleaner and more maintainable.
+    req.flash('error', 'You must be logged in to create a new listing!');
+    res.redirect('/login');
 });
 
 //create route
@@ -53,7 +59,7 @@ router.post('/', validateListing, wrapAsync(async (req, res, next)=>{
         res.redirect('/listings');    
 }));
 //update route
-router.get('/:id/edit', wrapAsync(async (req, res)=>{
+router.get('/:id/edit',isLoggedIn, wrapAsync(async (req, res)=>{
     const {id} = req.params;
     const listing = await Listing.findById(id);
     //if this lisitn doesnt exist
@@ -67,7 +73,7 @@ router.get('/:id/edit', wrapAsync(async (req, res)=>{
 
 
 
-router.put('/:id', validateListing, wrapAsync(async (req, res)=>{
+router.put('/:id', validateListing,IsLoggedin, wrapAsync(async (req, res)=>{
     const {id} = req.params;
     let {title, description, price, city, country} = req.body;
     await Listing.findByIdAndUpdate(id, {
@@ -84,7 +90,7 @@ router.put('/:id', validateListing, wrapAsync(async (req, res)=>{
 
 
 //delete route
-router.delete('/:id', wrapAsync(async (req, res)=>{
+router.delete('/:id',IsLoggedin, wrapAsync(async (req, res)=>{
     const {id} = req.params;
     await Listing.findByIdAndDelete(id);
     //flash message
