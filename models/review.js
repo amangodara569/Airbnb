@@ -13,6 +13,11 @@ const reviewSchema = new Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    // who wrote this review — needed for authorization (only author can delete their review)
+    author: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
     }
 });
 

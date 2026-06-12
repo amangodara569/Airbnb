@@ -24,3 +24,18 @@ module.exports.saveRedirectUrl = (req, res, next)=>{
     }
     next();
 };
+
+module.exports.isOwner = (req, res, next) => {
+    let {id} = req.params;
+    const Listing = require('./models/listing');
+    Listing.findById(id).then((listing) => {
+        if(!listing.owner.equals(req.user._id)){
+            req.flash('error', 'You are not the owner of this listing!');
+            return res.redirect(`/listings/${id}`);
+        }
+        next();
+    }).catch((err) => {
+        req.flash('error', 'Listing not found!');
+        res.redirect('/listings');
+    });
+};

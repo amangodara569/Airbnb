@@ -712,3 +712,176 @@ if (!listing.owner.equals(req.user._id)) {
 ---
 
 > 📝 **Next step:** After auth + authorization is complete, move to Phase 15 — **Image Upload** with `multer` + `cloudinary`. Users will be able to upload real photos for their listings instead of just entering an image URL.
+
+---
+
+## YOUR ACTUAL IMPLEMENTATION (What you built)
+
+> This section shows the EXACT code from your project — not the idealized guide.
+
+### Key differences in YOUR project:
+
+| Topic | Guide says | Your actual code |
+|-------|-----------|-----------------|
+| Middleware location | Inside `route/listing.js` | ✅ Separate `middleware.js` at project root |
+| `isOwner` middleware | Implemented | ✅ Done — in `middleware.js`, applied on PUT + DELETE routes |
+| `isLoggedIn` on PUT/DELETE | `isLoggedIn` + `isOwner` | ✅ Fixed — both applied correctly |
+| Owner field on Listing | Added | ✅ Done — `owner: { type: ObjectId, ref: 'User' }` |
+| Save owner on create | `newListing.owner = req.user._id` | ✅ Done — in POST `/listings` route |
+| Review author field | Added | ✅ Done — `author: { type: ObjectId, ref: 'User' }` |
+| Save review author on create | `review.author = req.user._id` | ✅ Done — in POST `/listings/:id/reviews` |
+| View: hide edit/delete | Done with `currentUser` check | ✅ Done — wrapped in `<% if (currentUser && listing.owner && listing.owner.equals(currentUser._id)) %>` |
+| Owner name on listing page | `listing.owner.username` in show.ejs | ✅ Done — shown as "🏠 Hosted by" card |
+| Review form: only logged-in users | Hide form if not logged in | ✅ Done — wrapped in `<% if (currentUser) %>` |
+| Review delete button: only author | Hide if not the author | ✅ Done — wrapped with authorship check |
+
+---
+
+### YOUR `middleware.js` — isLoggedIn + isOwner (Current):
+
+```js
+// isLoggedIn middleware — checks if user is authenticated
+module.exports.isLoggedIn = (req, res, next) => {
+    console.log(req.path, "..", req.originalUrl);
+    // req.path      = path within this router (e.g. "/new")
+    // req.originalUrl = full path from browser (e.g. "/listings/new")
+
+    // Save where the user was trying to go (before redirecting to login)
+    req.session.redirectUrl = req.originalUrl;
+
+    if (req.isAuthenticated()) {
+        return next(); // User is logged in → continue to route
+    }
+    // Not logged in → show error + redirect to login
+    req.flash('error', 'You must be logged in to do that!');
+    res.redirect('/login');
+};
+
+// saveRedirectUrl — copies session URL to res.locals BEFORE passport runs
+module.exports.saveRedirectUrl = (req, res, next) => {
+    if (req.session.redirectUrl) {
+        res.locals.redirectUrl = req.session.redirectUrl;
+    }
+    next();
+};
+
+// isOwner — checks if the logged-in user owns this listing
+module.exports.isOwner = (req, res, next) => {
+    let { id } = req.params;
+    const Listing = require('./models/listing');
+    Listing.findById(id).then((listing) => {
+        if (!listing.owner.equals(req.user._id)) {
+            req.flash('error', 'You are not the owner of this listing!');
+            return res.redirect(`/listings/${id}`);
+        }
+        next();
+    }).catch((err) => {
+        req.flash('error', 'Listing not found!');
+        res.redirect('/listings');
+    });
+};
+```
+
+---
+
+### YOUR `route/listing.js` — Full Authorization (Done):
+
+```js
+const { isLoggedIn, isOwner } = require('../middleware');  // ✅ both imported
+
+// NEW — protected with isLoggedIn middleware
+router.get('/new', (req, res) => {
+    // inline check (works — could also use isLoggedIn as middleware param)
+    if (req.isAuthenticated()) return res.render('listings/new.ejs');
+    req.flash('error', 'You must be logged in to create a new listing!');
+    res.redirect('/login');
+});
+
+// CREATE — isLoggedIn applied ✅ + owner saved ✅
+router.post('/', isLoggedIn, validateListing, wrapAsync(async (req, res, next) => {
+    let { title, description, price, city, country } = req.body;
+    const newListing = new Listing({ title, description, price, location: city, country });
+    newListing.owner = req.user._id;  // ✅ owner saved
+    await newListing.save();
+    req.flash('success', 'Listing created successfully!');
+    res.redirect('/listings');
+}));
+
+// EDIT — isLoggedIn ✅ (isOwner could also be added here)
+router.get('/:id/edit', isLoggedIn, wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const listing = await Listing.findById(id);
+    if (!listing) {
+        req.flash('error', 'Listing not found!');
+        return res.redirect('/listings');
+    }
+    res.render('listings/edit.ejs', { listing });
+}));
+
+// UPDATE — isLoggedIn ✅ + isOwner ✅
+router.put('/:id', isLoggedIn, isOwner, validateListing, wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    let { title, description, price, city, country } = req.body;
+    await Listing.findByIdAndUpdate(id, { title, description, price, location: city, country });
+    req.flash('success', 'Listing updated successfully!');
+    res.redirect(`/listings/${id}`);
+}));
+
+// DELETE — isLoggedIn ✅ + isOwner ✅
+router.delete('/:id', isLoggedIn, isOwner, wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    await Listing.findByIdAndDelete(id);
+    req.flash('success', 'Listing deleted successfully!');
+    res.redirect('/listings');
+}));
+
+// SHOW — nested populate to get review authors ✅
+router.get('/:id', wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const listing = await Listing.findById(id)
+        .populate({
+            path: 'reviews',
+            populate: { path: 'author' }  // nested: get User document for each review author
+        })
+        .populate('owner');  // get listing owner's username
+    if (!listing) {
+        req.flash('error', 'Listing not found!');
+        return res.redirect('/listings');
+    }
+    res.render('listings/show.ejs', { listing });
+}));
+```
+
+---
+
+### What's DONE vs What's PENDING:
+    </form>
+<% } %>
+```
+
+#### Step 7: Populate owner in SHOW route (to display owner info)
+```js
+router.get('/:id', wrapAsync(async (req, res) => {
+    const listing = await Listing.findById(id)
+        .populate('reviews')
+        .populate('owner');  // ← also load owner's username
+    res.render('listings/show.ejs', { listing });
+}));
+```
+
+---
+
+### Files created/modified during owner + authorization implementation:
+
+| File | Change |
+|------|--------|
+| `models/listing.js` | ✅ Added `owner` field (`type: ObjectId, ref: 'User'`) |
+| `models/review.js` | ✅ Added `author` field (`type: ObjectId, ref: 'User'`) |
+| `middleware.js` | ✅ Added `isOwner` middleware (alongside existing `isLoggedIn`, `saveRedirectUrl`) |
+| `route/listing.js` | ✅ `isOwner` on PUT + DELETE, `owner` saved on create, nested populate in SHOW |
+| `route/review.js` | ✅ `isLoggedIn` + `isReviewAuthor` on DELETE, `author` saved on review create |
+| `views/listings/show.ejs` | ✅ Owner name shown, Edit/Delete conditional on ownership, reviewer username shown, review form hidden from guests, delete review button conditional on authorship |
+
+---
+
+> 📝 **Next step:** Now that full authorization is complete, move to Phase 15 — **Image Upload** with `multer` + `cloudinary`. Users will be able to upload real photos for their listings instead of just entering an image URL.

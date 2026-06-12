@@ -7,7 +7,7 @@ const wrapAsync = require('../utils/wrapAsync');
 const expressError = require('../utils/expressError');
 const { listingSchema } = require('../schema.js');
 const Listing = require('../models/listing');
-const {isLoggedIn} = require('../middleware');
+const {isLoggedIn, isOwner} = require('../middleware');
 
 //after adding flash , create a ejs template for that and add in boilerplate in respected position where we want to show it
 
@@ -44,7 +44,7 @@ router.get('/new', (req, res)=>{
 
 //create route
 
-router.post('/', validateListing, wrapAsync(async (req, res, next)=>{
+router.post('/', isLoggedIn, validateListing, wrapAsync(async (req, res, next)=>{
         let {title, description, price, city, country} = req.body;
             const newListing = new Listing({
             title: title,
@@ -52,6 +52,7 @@ router.post('/', validateListing, wrapAsync(async (req, res, next)=>{
             price: price,
             location: city,
             country: country,
+            owner: req.user._id,
         });
         await newListing.save();
         //use flash to display success message after creating a new listing, we can use flash to display success message after creating a new listing, we can set the flash message in the create route and then display it in the index route, so that when the user creates a new listing, they will see a success message on the index page, we can also use flash to display error messages if there is any error while creating a new listing, for example if there is a validation error, we can set the flash message in the validateListing middleware and then display it in the index route, so that when the user tries to create a new listing with invalid data, they will see an error message on the index page.
@@ -59,7 +60,7 @@ router.post('/', validateListing, wrapAsync(async (req, res, next)=>{
         res.redirect('/listings');    
 }));
 //update route
-router.get('/:id/edit',isLoggedIn, wrapAsync(async (req, res)=>{
+router.get('/:id/edit', isLoggedIn, isOwner, wrapAsync(async (req, res)=>{
     const {id} = req.params;
     const listing = await Listing.findById(id);
     //if this lisitn doesnt exist
@@ -73,7 +74,7 @@ router.get('/:id/edit',isLoggedIn, wrapAsync(async (req, res)=>{
 
 
 
-router.put('/:id', validateListing,IsLoggedin, wrapAsync(async (req, res)=>{
+router.put('/:id', isLoggedIn, isOwner, validateListing, wrapAsync(async (req, res)=>{
     const {id} = req.params;
     let {title, description, price, city, country} = req.body;
     await Listing.findByIdAndUpdate(id, {
@@ -83,6 +84,7 @@ router.put('/:id', validateListing,IsLoggedin, wrapAsync(async (req, res)=>{
         location:city,
         country: country,
     });
+    req.flash('success', 'Listing updated successfully!');
     res.redirect(`/listings/${id}`);
 }));
 
@@ -90,7 +92,7 @@ router.put('/:id', validateListing,IsLoggedin, wrapAsync(async (req, res)=>{
 
 
 //delete route
-router.delete('/:id',IsLoggedin, wrapAsync(async (req, res)=>{
+router.delete('/:id', isLoggedIn, isOwner, wrapAsync(async (req, res)=>{
     const {id} = req.params;
     await Listing.findByIdAndDelete(id);
     //flash message
@@ -102,7 +104,12 @@ router.delete('/:id',IsLoggedin, wrapAsync(async (req, res)=>{
 //show route, (click on listing title to view more about it)
 router.get('/:id' , wrapAsync(async (req, res)=>{
     const {id} = req.params;
-    const listing = await Listing.findById(id).populate('reviews'); //populate is used to get the review data from the review collection, because in listing schema we have defined reviews as an array of object ids, so we need to populate it to get the actual review data, otherwise we will get only the object ids of the reviews, and we wont be able to show the review data on the show page of the listing, so we need to populate it to get the actual review data, and then we can show it on the show page of the listing.
+    const listing = await Listing.findById(id)
+        .populate({
+            path: 'reviews',
+            populate: { path: 'author' }  // nested populate: get the User document for each review's author
+        })
+        .populate('owner');  // also populate the listing owner so we can show listing.owner.username
     if(!listing){
         req.flash('error', 'Listing not found!');
         return res.redirect('/listings');

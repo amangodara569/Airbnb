@@ -786,3 +786,266 @@ passport.deserializeUser(User.deserializeUser());
 ---
 
 > 📝 **Next step:** After authentication works, add Authorization (`14_authorization.md`) — `isLoggedIn` middleware to protect routes, `isOwner` middleware to restrict edit/delete to listing owners only.
+
+---
+
+## YOUR ACTUAL IMPLEMENTATION (What you built)
+
+> This section shows the EXACT code you wrote — differences from the "ideal" guide above are noted.
+
+### Key differences in YOUR project:
+
+| Topic | Guide says | Your actual code |
+|-------|-----------|-----------------|
+| Route file name | `route/auth.js` | `route/user.js` |
+| Signup page route | `GET /signup` | `GET /register` |
+| Signup POST | `POST /signup` | `POST /signup` |
+| Middleware location | Inside route file | Separate `middleware.js` file |
+| PLM import | `passportLocalMongoose` | `passportLocalMongoose.default` |
+| Router mounted at | `/` (auth) | `/` (userRoutes) |
+
+---
+
+### YOUR `models/user.js` (Actual):
+
+```js
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+const passportLocalMongoose = require('passport-local-mongoose');
+
+const UserSchema = new Schema({
+    // IMP: username and password are added AUTOMATICALLY by passport-local-mongoose
+    // We only add extra fields we need (like email)
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
+});
+
+// NOTE: You used .default here — this is because of how the package exports
+// in some versions. passportLocalMongoose.default === passportLocalMongoose
+UserSchema.plugin(passportLocalMongoose.default);
+// This ONE line does:
+// ✅ Adds username field (unique, indexed)
+// ✅ Adds hash + salt fields (password stored hashed, never plain text)
+// ✅ Adds User.register(user, password) method
+// ✅ Adds User.authenticate() method (used by passport strategy)
+// ✅ Adds User.serializeUser() and User.deserializeUser()
+
+const User = mongoose.model('User', UserSchema);
+module.exports = User;
+```
+
+---
+
+### YOUR `middleware.js` (Actual — separate file at project root):
+
+```js
+// isLoggedIn — protects routes that need login
+module.exports.isLoggedIn = (req, res, next) => {
+    console.log(req.path, "..", req.originalUrl);
+    // req.path = the current path (e.g. /new)
+    // req.originalUrl = full URL with prefix (e.g. /listings/new)
+    // We log both for debugging — to see exactly where user was trying to go
+
+    // Save the URL the user was trying to reach, BEFORE redirecting to login
+    req.session.redirectUrl = req.originalUrl;
+    // After login, we'll redirect them back here
+
+    if (req.isAuthenticated()) {
+        return next();  // ✅ Logged in → continue to route
+    }
+    req.flash('error', 'You must be logged in to do that!');
+    res.redirect('/login');
+};
+
+// saveRedirectUrl — copies redirectUrl from session to res.locals
+// Called in POST /login BEFORE passport.authenticate()
+// Why? Because passport.authenticate() can reset/clear the session,
+// which would destroy our saved redirectUrl!
+// By copying to res.locals, we preserve it through the login process.
+module.exports.saveRedirectUrl = (req, res, next) => {
+    if (req.session.redirectUrl) {
+        res.locals.redirectUrl = req.session.redirectUrl;
+    }
+    next();
+};
+```
+
+---
+
+### YOUR `route/user.js` (Actual):
+
+```js
+const express = require('express');
+const router = express.Router();
+const User = require('../models/user.js');
+const passport = require('passport');
+const wrapAsync = require('../utils/wrapAsync.js');
+const { saveRedirectUrl } = require('../middleware.js');
+// Note: isLoggedIn is imported in listing.js, not here
+
+// ── SIGNUP ──────────────────────────────────────────────────
+// GET /register — Show signup form
+// Note: your register PAGE is at /register (not /signup)
+router.get("/register", (req, res) => {
+    res.render("users/signup.ejs");
+});
+
+// POST /signup — Handle signup form submission
+router.post("/signup", wrapAsync(async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
+
+        // Create user WITHOUT password (PLM handles password separately)
+        const user = new User({ username, email });
+
+        // User.register() hashes the password and saves to DB
+        const registeredUser = await User.register(user, password);
+
+        // Auto-login after signup using req.login()
+        // (built-in passport method, same family as req.logout)
+        req.login(registeredUser, (err) => {
+            if (err) {
+                return next(err); // Note: 'next' not in scope — bug to fix!
+            }
+            req.flash("success", "welcome to wanderlust");
+            res.redirect("/listings"); // Note: typo '/lisitings' in original
+        });
+
+    } catch (e) {
+        // If username already taken, passport-local-mongoose throws an error
+        req.flash("error", e.message);
+        res.redirect("/register");
+    }
+}));
+
+// ── LOGIN ────────────────────────────────────────────────────
+// GET /login — Show login form
+router.get("/login", (req, res) => {
+    res.render("users/login.ejs");
+});
+
+// POST /login — Authenticate user with passport
+router.post("/login",
+    // Step 1: Save the intended URL (must run BEFORE passport clears session)
+    saveRedirectUrl,
+
+    // Step 2: passport.authenticate() verifies username + password
+    // successRedirect: where to go on success (overridden by redirectUrl if set)
+    // failureRedirect: where to go if login fails
+    // failureFlash: auto-sets error flash message on failure
+    wrapAsync(passport.authenticate("local", {
+        successRedirect: "/listings",
+        failureRedirect: "/login",
+        failureFlash: true
+    }),
+        async (req, res) => {
+            // This callback runs on SUCCESS
+            req.flash("success", "welcome back!");
+            // Redirect to saved URL, or /listings as fallback
+            res.redirect(res.locals.redirectUrl || "/listings");
+        }
+    )
+);
+
+// ── LOGOUT ───────────────────────────────────────────────────
+// GET /logout — Log user out
+router.get("/logout", (req, res, next) => {
+    // req.logout() is provided by Passport
+    // In newer versions of Passport (0.6+), it requires a callback
+    req.logout((err) => {
+        if (err) {
+            return next(err);
+        }
+        req.flash("success", "logged out successfully");
+        res.redirect("/listings");
+    });
+});
+
+module.exports = router;
+```
+
+---
+
+### YOUR `app.js` — Auth setup section (Actual):
+
+```js
+// ── IMPORTS ──────────────────────────────────────────────────
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+const User = require('./models/user.js');
+const userRoutes = require('./route/user.js');
+
+// ── SESSION (must come BEFORE passport) ──────────────────────
+const sessionOptions = {
+    secret: "mysecretkey",      // ⚠️ Use .env in production!
+    resave: false,
+    saveUninitialized: true,    // Creates session even for unauthenticated users
+    cookie: {
+        expires: Date.now() + 1000 * 60 * 60 * 24,  // 24 hours from NOW
+        maxAge: 1000 * 60 * 60 * 24,                  // 24 hours duration
+        httpOnly: true,  // Cookie not readable by browser JS (security)
+    }
+};
+app.use(session(sessionOptions));
+app.use(flash());               // Flash needs session — must come after
+
+// ── PASSPORT SETUP (must come AFTER session) ──────────────────
+app.use(passport.initialize()); // Start passport
+app.use(passport.session());    // Connect passport to express-session
+
+// Tell passport HOW to verify username+password:
+passport.use(new LocalStrategy(User.authenticate()));
+
+// How to store user in session (just saves the user ID):
+passport.serializeUser(User.serializeUser());
+
+// How to load user from session (runs User.findById on each request):
+passport.deserializeUser(User.deserializeUser());
+
+// ── MAKE currentUser AVAILABLE IN ALL TEMPLATES ───────────────
+app.use((req, res, next) => {
+    res.locals.success = req.flash('success');
+    res.locals.error   = req.flash('error');
+    res.locals.currentUser = req.user;
+    // req.user = undefined if not logged in
+    // req.user = full user object if logged in (set by deserializeUser)
+    next();
+});
+
+// ── MOUNT AUTH ROUTER ─────────────────────────────────────────
+app.use("/", userRoutes);
+// Auth routes: /register, /signup, /login, /logout
+// Mounted at root "/" — no prefix
+```
+
+---
+
+### Files created for YOUR authentication:
+
+| File | Status | Notes |
+|------|--------|-------|
+| `models/user.js` | ✅ Created | UserSchema + PLM plugin |
+| `route/user.js` | ✅ Created | /register, /signup, /login, /logout |
+| `middleware.js` | ✅ Created | isLoggedIn + saveRedirectUrl |
+| `views/users/signup.ejs` | ✅ Created | Signup form |
+| `views/users/login.ejs` | ✅ Created | Login form |
+| `app.js` | ✅ Updated | Passport setup + currentUser + userRoutes |
+
+---
+
+### Known bugs / things to improve in YOUR code:
+
+| Issue | Location | Fix |
+|-------|----------|-----|
+| `next` not in scope in signup | `route/user.js` line 22 | Add `next` to the outer `wrapAsync` callback params |
+| Typo `/lisitings` | `route/user.js` line 25 | Change to `/listings` |
+| `successRedirect` in authenticate + manual redirect causes conflict | `route/user.js` POST /login | Either use `successRedirect` OR the callback — not both |
+| `saveUninitialized: true` | `app.js` | Should be `false` for security (don't create sessions for anonymous users) |
+| Secret hardcoded | `app.js` | Move to `.env`: `secret: process.env.SECRET` |
+
+---
+
+> 📝 **Authentication is complete!** Your next step (Authorization) restricts what logged-in users can do — only owners can edit/delete their own listings. See `14_authorization.md`.

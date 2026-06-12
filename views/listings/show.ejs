@@ -34,8 +34,20 @@
             <div class="detail-label">🌍 Country</div>
             <div class="detail-value"><%= listing.country %></div>
         </div>
+        <div class="detail-card">
+            <div class="detail-label">🏠 Hosted by</div>
+            <div class="detail-value">
+                <% if (listing.owner) { %>
+                    <%= listing.owner.username %>
+                <% } else { %>
+                    Unknown
+                <% } %>
+            </div>
+        </div>
     </div>
 
+    <%# Only show Edit/Delete buttons if the logged-in user is the OWNER of this listing %>
+    <% if (currentUser && listing.owner && listing.owner.equals(currentUser._id)) { %>
     <div class="action-buttons">
         <a href="/listings/<%= listing._id %>/edit" class="btn-action btn-edit">
             ✏️ Edit Listing
@@ -46,9 +58,12 @@
             </button>
         </form>
     </div>
+    <% } %>
 
     <!-- FOR REVIEWS -->
     <div class="review-section">
+        <%# Only show the review form to logged-in users %>
+        <% if (currentUser) { %>
         <div class="review-form-card">
             <h4>Leave a review</h4>
             <form class="review-form needs-validation" action="/listings/<%= listing._id %>/reviews" method="POST" novalidate>
@@ -75,6 +90,7 @@
                 <button class="btn-action btn-primary" type="submit">Submit Review</button>
             </form>
         </div>
+        <% } %>
 
         <div class="reviews-block">
             <div class="reviews-header">
@@ -87,7 +103,14 @@
                     <% for(let review of listing.reviews){ %>
                         <article class="review-card">
                             <div class="review-card-top">
-                                <div class="review-author">Guest review</div>
+                                <%# Show the reviewer's username if available %>
+                                <div class="review-author">
+                                    <% if (review.author) { %>
+                                        👤 <%= review.author.username %>
+                                    <% } else { %>
+                                        Guest review
+                                    <% } %>
+                                </div>
                                 <div class="review-rating-badge">
                                     <span class="review-rating-number"><%= review.rating %></span>
                                     <span class="review-rating-stars"><%= '★'.repeat(review.rating) %><%= '☆'.repeat(5 - review.rating) %></span>
@@ -102,10 +125,12 @@
                                     <span><%= new Date(review.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
                                 <% } %>
                             </div>
-                            <!-- deleting a review -->
+                            <%# Only show Delete Review button if current user wrote this review %>
+                            <% if (currentUser && review.author && review.author.equals(currentUser._id)) { %>
                             <form action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE" method="POST" style="margin-top:8px;">
                                 <button type="submit" class="btn-action btn-delete" style="padding:6px 10px;">🗑️ Delete Review</button>
                             </form>
+                            <% } %>
                         </article>
                     <% } %>
                 <% } else { %>
