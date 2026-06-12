@@ -8,7 +8,7 @@ const expressError = require('../utils/expressError');
 const { listingSchema } = require('../schema.js');
 const Listing = require('../models/listing');
 const {isLoggedIn, isOwner} = require('../middleware');
-
+const listingController = require('../controllers/listings');
 //after adding flash , create a ejs template for that and add in boilerplate in respected position where we want to show it
 
 
@@ -27,10 +27,7 @@ const validateListing = (req, res, next) => {
 
 
 
-router.get('/', wrapAsync(async (req, res)=>{
-    const alllistings = await Listing.find({});
-    res.render('listings/index.ejs', {listings: alllistings});
-}));
+router.get('/', wrapAsync(index));
 
 //new route
 router.get('/new', (req, res)=>{
